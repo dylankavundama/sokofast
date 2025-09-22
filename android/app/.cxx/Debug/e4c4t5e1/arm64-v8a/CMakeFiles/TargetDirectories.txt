@@ -1,0 +1,2 @@
+C:/Users/Dylan/Desktop/Reboot/mbiyopay/android/app/.cxx/Debug/e4c4t5e1/arm64-v8a/CMakeFiles/edit_cache.dir
+C:/Users/Dylan/Desktop/Reboot/mbiyopay/android/app/.cxx/Debug/e4c4t5e1/arm64-v8a/CMakeFiles/rebuild_cache.dir

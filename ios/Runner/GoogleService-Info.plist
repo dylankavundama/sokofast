@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>853399373310-slujki5ukibt11nij4ktj1cqs301sooa.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.853399373310-slujki5ukibt11nij4ktj1cqs301sooa</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>853399373310-1fb536vu7jargtrv73tm13jste9bhr0p.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAZtwEipNIWXzL8mgQIE_mi3fMzqpjL1EY</string>
+	<key>GCM_SENDER_ID</key>
+	<string>853399373310</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>net.appdevs.qrpayuser</string>
+	<key>PROJECT_ID</key>
+	<string>njangi-6e1ea</string>
+	<key>STORAGE_BUCKET</key>
+	<string>njangi-6e1ea.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:853399373310:ios:6d7b2ebbc77efa579facaf</string>
+	<key>DATABASE_URL</key>
+	<string>https://njangi-6e1ea-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>

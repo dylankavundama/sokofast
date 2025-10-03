@@ -1,21 +1,24 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:soko/Profil/mes_produits.dart';
 
-// IMPORTANT: Remplacez ces valeurs par vos propres clés API et l'URL de votre site.
-// AVERTISSEMENT: Ne laissez JAMAIS de clés API en clair dans une application en production.
-// Utilisez des variables d'environnement ou un service de configuration sécurisé.
-const String _consumerKey = 'ck_ad48e33210f0327f5126c4bb84d79ba833080d52';
-const String _consumerSecret = 'cs_2ec17813a81fb24e2ef4029223cc8e45f3764e0a';
-const String _baseUrl = 'https://www.babutik.com/wp-json/wc/v3';
+const String _consumerKey = 'ck_898b353c3d1e748271c6e873948caaf87ec30d1e';
+const String _consumerSecret = 'cs_b2ee223b023699dd8de97b409a23b929963422c2';
+const String _baseUrl = "https://www.easykivu.com/wp/wp-json/wc/v3";
+
+// ⚠️ REMPLACEZ AVEC VOS VRAIES IDENTIFIANTS WORDPRESS
+const String _wpUsername = "admin"; // Votre email ou username WordPress
+const String _wpPassword =  "igUA 9IIx Vqhg cuXj k1qR ggZ7";
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({Key? key}) : super(key: key);
 
   @override
-  _AddProductScreenState createState() => _AddProductScreenState();
+  State<AddProductScreen> createState() => _AddProductScreenState();
 }
 
 class _AddProductScreenState extends State<AddProductScreen> {
@@ -24,216 +27,242 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  Map<String, dynamic>? _selectedCategory;
-  List<dynamic> _apiCategories = [];
-  bool _isCategoriesLoading = true;
-  bool _isPublishing = false;
-  
   XFile? _selectedImage;
+  bool _isPublishing = false;
+  String? _jwtToken;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchCategories();
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _priceController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-
-  // Fonction pour récupérer les catégories depuis l'API WooCommerce
-  Future<void> _fetchCategories() async {
-    try {
-      final auth = utf8.encode('$_consumerKey:$_consumerSecret');
-      final headers = {
-        'Authorization': 'Basic ${base64Encode(auth)}',
-      };
-      
-      final response = await http.get(
-        Uri.parse('$_baseUrl/products/categories?per_page=100'),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        setState(() {
-          _apiCategories = data;
-          _isCategoriesLoading = false;
-        });
-      } else {
-        setState(() {
-          _isCategoriesLoading = false;
-        });
-        if (mounted) {
-          final errorData = json.decode(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur de chargement des catégories: ${errorData['message']}')),
-          );
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _isCategoriesLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur réseau lors du chargement des catégories : ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  // Fonction pour choisir une seule image depuis la galerie
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-
+    final image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      setState(() {
-        _selectedImage = image;
-      });
+      setState(() => _selectedImage = image);
     }
   }
 
-  // Fonction pour télécharger l'image vers l'API WordPress Media
-  Future<String?> _uploadImage() async {
-    if (_selectedImage == null) {
-      return null;
-    }
-    final auth = utf8.encode('$_consumerKey:$_consumerSecret');
-    final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Basic ${base64Encode(auth)}',
-    };
-    
-    final bytes = await _selectedImage!.readAsBytes();
-    final base64Image = base64Encode(bytes);
-    
-    final mediaData = {
-      'title': _selectedImage!.name,
-      'status': 'publish',
-      'media_file': base64Image,
-    };
-
+  // ✅ OBTAIN JWT TOKEN
+  Future<bool> _getJWTToken() async {
     try {
-      final response = await http.post(
-        Uri.parse('https://www.babutik.com/wp-json/wp/v2/media'),
-        headers: headers,
-        body: jsonEncode(mediaData),
-      );
+      print("🔐 Tentative de connexion JWT...");
       
-      if (response.statusCode == 201) {
-        final imageData = json.decode(response.body);
-        return imageData['source_url'];
+      final response = await http.post(
+        Uri.parse("https://www.easykivu.com/wp/wp-json/jwt-auth/v1/token"),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'username': _wpUsername,
+          'password': _wpPassword,
+        }),
+      );
+
+      print("🔐 JWT Response Status: ${response.statusCode}");
+      print("🔐 JWT Response Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _jwtToken = data['token'];
+        print("✅ JWT Token obtenu avec succès");
+        return true;
       } else {
-        // Afficher la réponse exacte du serveur pour le débogage
-        print('Erreur serveur: ${response.statusCode}');
-        print('Corps de la réponse: ${response.body}');
-        
-        final errorData = json.decode(response.body);
+        final error = jsonDecode(response.body);
+        print("❌ Erreur JWT: ${error['message']}");
+        return false;
+      }
+    } catch (e) {
+      print("❌ Exception JWT: $e");
+      return false;
+    }
+  }
+
+  // ✅ UPLOAD IMAGE WITH JWT
+  Future<int?> _uploadImageWithJWT() async {
+    if (_selectedImage == null) return null;
+
+    // Obtenir le token JWT si pas déjà fait
+    if (_jwtToken == null) {
+      final success = await _getJWTToken();
+      if (!success) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur de téléchargement d\'image : ${errorData['message']}')),
+            const SnackBar(
+              content: Text("❌ Échec authentification WordPress"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return null;
+      }
+    }
+
+    print("🔄 Upload image avec JWT...");
+
+    try {
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse("https://www.easykivu.com/wp/wp-json/wp/v2/media"),
+      );
+      
+      request.headers['Authorization'] = 'Bearer $_jwtToken';
+      
+      // Ajouter le fichier
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          _selectedImage!.path,
+        ),
+      );
+      
+      final response = await request.send();
+      final responseData = await response.stream.bytesToString();
+      final jsonResponse = jsonDecode(responseData);
+      
+      print("=== RÉPONSE UPLOAD IMAGE ===");
+      print("📋 Status: ${response.statusCode}");
+      
+      if (response.statusCode == 201) {
+        print("✅ IMAGE UPLOADÉE AVEC SUCCÈS");
+        print("🆔 ID Image: ${jsonResponse['id']}");
+        print("🔗 URL: ${jsonResponse['source_url']}");
+        return jsonResponse['id'];
+      } else {
+        print("❌ ÉCHEC UPLOAD: ${jsonResponse['message']}");
+        print("💡 Code erreur: ${jsonResponse['code']}");
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Erreur upload: ${jsonResponse['message']}"),
+              backgroundColor: Colors.orange,
+            ),
           );
         }
         return null;
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur réseau lors du téléchargement : ${e.toString()}')),
-        );
-      }
+      print("❌ EXCEPTION UPLOAD: $e");
       return null;
     }
   }
 
-  // Fonction pour insérer le produit via l'API
-  Future<void> _createProduct() async {
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    
-    if (_selectedImage == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Veuillez sélectionner une image.')),
-        );
-      }
-      return;
-    }
+  // ✅ CRÉATION PRODUIT WOOCOMMERCE
+  Future<void> _createProductWithImage() async {
+    if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isPublishing = true;
-    });
+    setState(() => _isPublishing = true);
 
-    final String? imageUrl = await _uploadImage();
-    if (imageUrl == null) {
-      setState(() { _isPublishing = false; });
-      return;
-    }
-    
-    final productData = {
-      'name': _nameController.text,
-      'type': 'simple',
-      'regular_price': _priceController.text,
-      'description': _descriptionController.text,
-      'categories': [
-        if (_selectedCategory != null) {'id': _selectedCategory!['id']}
-      ],
-      'images': [{'src': imageUrl}],
-      'status': 'publish',
-    };
-
-    final auth = utf8.encode('$_consumerKey:$_consumerSecret');
+    final auth = base64Encode(utf8.encode("$_consumerKey:$_consumerSecret"));
     final headers = {
-      'Content-Type': 'application/json',
-      'Authorization': 'Basic ${base64Encode(auth)}',
+      "Authorization": "Basic $auth",
+      "Content-Type": "application/json",
     };
 
     try {
+      // 1. Uploader l'image
+      int? imageId;
+      if (_selectedImage != null) {
+        imageId = await _uploadImageWithJWT();
+        
+        if (imageId == null) {
+          // Si l'upload échoue, créer le produit sans image
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text("⚠️ Produit créé sans image - ajoutez-la manuellement"),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+        }
+      }
+
+      // 2. Créer le produit
+// Dans _createProduct(), modifiez productData :
+final Map<String, dynamic> productData = {
+  "name": _nameController.text,
+  "type": "simple",
+  "regular_price": _priceController.text,
+  "description": _descriptionController.text,
+  "status": "publish",
+  "meta_data": [
+    {
+      "key": "vendor_user_id",
+      "value": FirebaseAuth.instance.currentUser?.uid ?? ""
+    },
+    {
+      "key": "user_email", 
+      "value": FirebaseAuth.instance.currentUser?.email ?? ""
+    }
+  ]
+};
+
+      // 3. Associer l'image si upload réussit
+      if (imageId != null) {
+        productData["images"] = [{"id": imageId}];
+      }
+
       final response = await http.post(
-        Uri.parse('$_baseUrl/products'),
+        Uri.parse("$_baseUrl/products"),
         headers: headers,
         body: jsonEncode(productData),
       );
 
+      print("=== RÉPONSE PRODUIT ===");
+      print("Status: ${response.statusCode}");
+
       if (response.statusCode == 201) {
+        final product = jsonDecode(response.body);
+        final hasImage = product['images'] != null && product['images'].isNotEmpty;
+        
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Produit créé avec succès !')),
+            SnackBar(
+              content: Text(
+                hasImage ? "✅ Produit créé avec image!" : "✅ Produit créé!",
+              ),
+              backgroundColor: hasImage ? Colors.green : Colors.blue,
+              duration: const Duration(seconds: 3),
+            ),
           );
         }
-        _formKey.currentState!.reset();
-        _nameController.clear();
-        _priceController.clear();
-        _descriptionController.clear();
-        setState(() {
-          _selectedCategory = null;
-          _selectedImage = null;
-        });
+        _resetForm();
       } else {
-        if (mounted) {
-          final errorData = jsonDecode(response.body);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Erreur: ${errorData['message']}')),
-          );
-        }
+        throw Exception("Erreur création produit: ${response.body}");
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur réseau: ${e.toString()}')),
+          SnackBar(
+            content: Text("Erreur: $e"),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
-      setState(() {
-        _isPublishing = false;
-      });
+      setState(() => _isPublishing = false);
+    }
+  }
+
+  void _resetForm() {
+    _formKey.currentState!.reset();
+    _nameController.clear();
+    _priceController.clear();
+    _descriptionController.clear();
+    setState(() {
+      _selectedImage = null;
+      _jwtToken = null;
+    });
+  }
+
+  // ✅ TEST DE CONNEXION
+  Future<void> _testConnection() async {
+    final success = await _getJWTToken();
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success ? "✅ Connexion WordPress réussie!" : "❌ Échec connexion WordPress",
+          ),
+          backgroundColor: success ? Colors.green : Colors.red,
+        ),
+      );
     }
   }
 
@@ -241,111 +270,100 @@ class _AddProductScreenState extends State<AddProductScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Ajouter un produit'),
-        backgroundColor: Colors.white,
+        title: const Text("Ajouter Produit + Image"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.production_quantity_limits_outlined),
+            onPressed: (){
+
+              Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => MyProductsScreen()));
+            },
+            tooltip: "Tester connexion WordPress",
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
             children: [
+              // Instructions
+              const Card(
+                color: Colors.blue,
+                child: Padding(
+                  padding: EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "📋 Configuration requise:",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 8),
+                      Text("1. Plugin 'JWT Authentication' activé"),
+                      Text("2. Clé JWT dans wp-config.php"),
+                      Text("3. Identifiants WordPress corrects"),
+                    ],
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 20),
+              
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: 'Nom du produit'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer le nom du produit';
-                  }
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: "Nom du produit"),
+                validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _priceController,
-                decoration: const InputDecoration(labelText: 'Prix'),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Veuillez entrer le prix';
-                  }
-                  return null;
-                },
+                decoration: const InputDecoration(labelText: "Prix"),
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: 'Description'),
-                maxLines: 4,
+                decoration: const InputDecoration(labelText: "Description"),
+                maxLines: 3,
               ),
               const SizedBox(height: 16),
-              if (_isCategoriesLoading)
-                const Center(child: CircularProgressIndicator())
-              else
-                DropdownButtonFormField<Map<String, dynamic>>(
-                  decoration: const InputDecoration(
-                    labelText: 'Catégorie',
-                    border: OutlineInputBorder(),
-                  ),
-                  value: _selectedCategory,
-                  items: _apiCategories.map((category) {
-                    return DropdownMenuItem<Map<String, dynamic>>(
-                      value: category,
-                      child: Text(category['name'] as String),
-                    );
-                  }).toList(),
-                  onChanged: (Map<String, dynamic>? newValue) {
-                    setState(() {
-                      _selectedCategory = newValue;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return 'Veuillez sélectionner une catégorie';
-                    }
-                    return null;
-                  },
-                ),
-              const SizedBox(height: 24),
+              
               if (_selectedImage != null)
-                Center(
-                  child: Stack(
-                    children: [
-                      Image.file(
-                        File(_selectedImage!.path),
-                        height: 200,
-                        fit: BoxFit.cover,
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedImage = null;
-                            });
-                          },
-                          child: const Icon(
-                            Icons.remove_circle,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Image.file(File(_selectedImage!.path), height: 150),
+              
               ElevatedButton.icon(
                 onPressed: _pickImage,
                 icon: const Icon(Icons.image),
-                label: const Text('Choisir une image'),
+                label: const Text("Choisir une image"),
               ),
+              
               const SizedBox(height: 24),
+              
               ElevatedButton(
-                onPressed: _isPublishing ? null : _createProduct,
+                onPressed: _isPublishing ? null : _createProductWithImage,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
                 child: _isPublishing
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Ajouter le produit'),
+                    ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          CircularProgressIndicator(color: Colors.white),
+                          SizedBox(width: 10),
+                          Text("Publication...", style: TextStyle(color: Colors.white)),
+                        ],
+                      )
+                    : const Text(
+                        "Créer le produit avec image",
+                        style: TextStyle(color: Colors.white, fontSize: 16),
+                      ),
               ),
             ],
           ),

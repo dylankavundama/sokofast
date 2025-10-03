@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:soko/Product/add.dart';
+import 'package:soko/Profil/mes_produits.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:soko/Auth/loginPage.dart';
@@ -46,7 +47,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _setupAuthStateListener() {
     FirebaseAuth.instance.authStateChanges().listen((user) {
       if (!mounted) return;
-      
+
       _user = user;
       _isLoading = false;
 
@@ -58,7 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         // pushAndRemoveUntil empêche le retour en arrière.
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (context) =>   LoginPage()),
+          MaterialPageRoute(builder: (context) => LoginPage()),
           (Route<dynamic> route) => false,
         );
       }
@@ -109,7 +110,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         content: TextField(controller: controller),
         actions: [
           TextButton(
-              onPressed: () => Navigator.pop(context), child: const Text('Annuler')),
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler')),
           ElevatedButton(
             child: const Text('Enregistrer'),
             onPressed: () async {
@@ -127,12 +129,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 });
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Nom d\'utilisateur mis à jour avec succès!')),
+                  const SnackBar(
+                      content:
+                          Text('Nom d\'utilisateur mis à jour avec succès!')),
                 );
               } catch (e) {
                 print("Erreur de mise à jour du nom : $e");
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Erreur: Impossible de mettre à jour le nom. $e')),
+                  SnackBar(
+                      content: Text(
+                          'Erreur: Impossible de mettre à jour le nom. $e')),
                 );
               }
             },
@@ -142,8 +148,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
- 
-
   // Déconnecte l'utilisateur de Firebase
   Future<void> _logout() async {
     await FirebaseAuth.instance.signOut();
@@ -151,7 +155,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // pour garantir l'absence de retour.
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) =>   LoginPage()),
+      MaterialPageRoute(builder: (context) => LoginPage()),
       (Route<dynamic> route) => false,
     );
   }
@@ -162,8 +166,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _historique() async {
-    Navigator.push(
-        context, MaterialPageRoute(builder: (context) => const OrderHistoryScreen()));
+    Navigator.push(context,
+        MaterialPageRoute(builder: (context) => const OrderHistoryScreen()));
   }
 
   // Utilise launchUrl pour des raisons de modernité
@@ -223,7 +227,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-    String? loggedInUserName;
+
+  String? loggedInUserName;
   Future<void> _loadLoggedInUser() async {
     // Obtenez l'utilisateur actuellement connecté via Firebase Auth
     final user = FirebaseAuth.instance.currentUser;
@@ -240,6 +245,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     //   await prefs.setString('username', loggedInUserName!);
     // }
   }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -269,25 +275,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
         child: ListView(
           children: [
             ListTile(
-              leading:   Icon(Icons.person, size: 33),
+              leading: Icon(Icons.person, size: 33),
               title: Text(loggedInUserName ?? '',
                   style: const TextStyle(
                       fontSize: 20, fontWeight: FontWeight.bold)),
               subtitle: const Text('Utilisateur'),
-          
             ),
-                   //   if (loggedInUserName != null)
-  
+            //   if (loggedInUserName != null)
+
             const Divider(),
-                             ListTile(
+            ListTile(
               leading: const Icon(Icons.add_task_outlined),
-              title: const Text('Ajouter un produit'),
+              title: const Text('Mes Prosduits'),
               onTap: () {
                 Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) =>  AddProductScreen()));
-              } ,
+                        builder: (context) => MyProductsScreen()));
+              },
             ),
             ListTile(
               leading: const Icon(Icons.show_chart),
@@ -305,25 +310,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Service Client'),
               onTap: _showCustomerServiceDialog,
             ),
-     
+
             const ListTile(
               leading: Icon(Icons.share),
               title: Text('Partager l\'application'),
             ),
-              const Divider(),
+            const Divider(),
             const ListTile(
               leading: Icon(Icons.group_add),
               title: Text('Inviter des amis'),
             ),
-          //  const Divider(),
+            //  const Divider(),
             ListTile(
               leading: Icon(Icons.logout, color: backdColor),
               title: const Text('Se déconnecter'),
               onTap: _logout,
             ),
-    
+
             //const Divider(),
-            Center(child: Image.asset('assets/icon.png',height: MediaQuery.of(context).size.height * 0.2,fit: BoxFit.cover),)
+            Center(
+              child: Image.asset('assets/icon.png',
+                  height: MediaQuery.of(context).size.height * 0.2,
+                  fit: BoxFit.cover),
+            )
           ],
         ),
       ),

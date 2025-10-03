@@ -63,11 +63,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
     try {
       final response = await http.get(
         Uri.parse(
-            'https://www.babutik.com/wp-json/wc/v3/products?per_page=100'),
-        headers: {
+            // 'https://www.babutik.com/wp-json/wc/v3/products?per_page=100'),
+              'https://www.easykivu.com/wp/wp-json/wc/v3/products?per_page=100'),
+        // headers: {
+        //   'Authorization':
+        //       'Basic ${base64Encode(utf8.encode('ck_ad48e33210f0327f5126c4bb84d79ba833080d52:cs_2ec17813a81fb24e2ef4029223cc8e45f3764e0a'))}',
+        // },
+
+          headers: {
           'Authorization':
-              'Basic ${base64Encode(utf8.encode('ck_ad48e33210f0327f5126c4bb84d79ba833080d52:cs_2ec17813a81fb24e2ef4029223cc8e45f3764e0a'))}',
-        },
+              'Basic ${base64Encode(utf8.encode('ck_898b353c3d1e748271c6e873948caaf87ec30d1e:cs_b2ee223b023699dd8de97b409a23b929963422c2'))}',}
       );
 
       if (response.statusCode == 200) {

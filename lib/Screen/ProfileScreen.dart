@@ -285,8 +285,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             const Divider(),
             ListTile(
-              leading: const Icon(Icons.add_task_outlined),
-              title: const Text('Mes Prosduits'),
+              leading: const Icon(Icons.store),
+              title: const Text('Mes Produits'),
               onTap: () {
                 Navigator.push(
                     context,

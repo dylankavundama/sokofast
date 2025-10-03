@@ -2,8 +2,62 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:soko/Product/add.dart';
+import 'package:soko/Profil/EditProductScreen.dart';
 import 'package:soko/style.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// 💡 Créez un nouveau fichier `image_viewer_screen.dart` ou ajoutez cette classe
+// DANS le fichier où vous en avez besoin (par exemple, mes_produits.dart).
+import 'package:flutter/material.dart';
+
+// 💡 Correction: La classe est immutable, donc le constructeur doit être const.
+// 💡 Correction: initialIndex doit être initialisé car il est final.
+// 💡 Correction: key est converti en super-paramètre.
+class ImageViewerScreen extends StatelessWidget {
+  final List<dynamic> images;
+  final int initialIndex;
+
+  const ImageViewerScreen({
+    // ⬅️ Ajout de 'const' ici
+    super.key, // ⬅️ Utilisation du super-paramètre
+    required this.images,
+    this.initialIndex = 0, // ⬅️ initialisation du paramètre final ici
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    // Utiliser un PageView pour permettre de glisser entre les images
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: PageView.builder(
+        // L'initialIndex doit être vérifié pour ne pas dépasser la taille de la liste
+        controller: PageController(
+            initialPage: images.isNotEmpty && initialIndex < images.length
+                ? initialIndex
+                : 0),
+        itemCount: images.length,
+        itemBuilder: (context, index) {
+          final imageUrl = images[index]['src'];
+          return Center(
+            child: InteractiveViewer(
+              panEnabled: true,
+              boundaryMargin: const EdgeInsets.all(20),
+              minScale: 0.5,
+              maxScale: 4,
+              child: Image.network(
+                imageUrl,
+                fit: BoxFit.contain,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
 
 const String _consumerKey = 'ck_898b353c3d1e748271c6e873948caaf87ec30d1e';
 const String _consumerSecret = 'cs_b2ee223b023699dd8de97b409a23b929963422c2';
@@ -36,9 +90,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       final prefs = await SharedPreferences.getInstance();
       _currentUserEmail = prefs.getString('user_email');
       _currentUserName = prefs.getString('user_name');
-      
+
       print("👤 Utilisateur chargé: $_currentUserEmail");
-      
+
       if (_currentUserEmail != null) {
         _loadMyProducts();
       } else {
@@ -120,26 +174,27 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
 
       print("📦 Response status: ${response.statusCode}");
       print("👤 User: $_currentUserEmail");
-      
+
       if (response.statusCode == 200) {
         final List<dynamic> allProducts = jsonDecode(response.body);
-        
+
         // Filtrer les produits par utilisateur connecté
         final userProducts = allProducts.where((product) {
           return _isProductOwnedByUser(product);
         }).toList();
-        
+
         // Trier par date de création
-        userProducts.sort((a, b) => b['date_created'].compareTo(a['date_created']));
-        
+        userProducts
+            .sort((a, b) => b['date_created'].compareTo(a['date_created']));
+
         // Sauvegarder dans le cache
         await _saveProductsToCache(userProducts);
-        
+
         setState(() {
           _products = userProducts;
           _isLoading = false;
         });
-        
+
         print("✅ ${_products.length} produits trouvés pour $_currentUserEmail");
       } else {
         final error = jsonDecode(response.body);
@@ -179,10 +234,10 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     if (_currentUserEmail == null) return false;
 
     final metaData = product['meta_data'] ?? [];
-    
+
     // Vérifier dans les meta données
     for (var meta in metaData) {
-      if (meta['key'] == 'vendor_user_id' || 
+      if (meta['key'] == 'vendor_user_id' ||
           meta['key'] == 'user_email' ||
           meta['key'] == '_vendor_email') {
         final value = meta['value'].toString();
@@ -191,14 +246,14 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         }
       }
     }
-    
+
     // Vérifier dans le nom ou description (fallback)
     final productName = product['name']?.toString().toLowerCase() ?? '';
     final productDesc = product['description']?.toString().toLowerCase() ?? '';
     final userEmailPrefix = _currentUserEmail!.split('@')[0].toLowerCase();
-    
-    return productName.contains(userEmailPrefix) || 
-           productDesc.contains(userEmailPrefix);
+
+    return productName.contains(userEmailPrefix) ||
+        productDesc.contains(userEmailPrefix);
   }
 
   // ✅ SAUVEGARDER LES PRODUITS DANS LE CACHE
@@ -217,8 +272,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   Future<void> _loadCachedProducts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final cachedProductsJson = prefs.getString('cached_products_$_currentUserEmail');
-      
+      final cachedProductsJson =
+          prefs.getString('cached_products_$_currentUserEmail');
+
       if (cachedProductsJson != null) {
         final List<dynamic> cachedProducts = jsonDecode(cachedProductsJson);
         setState(() {
@@ -256,7 +312,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Confirmer la suppression"),
-          content: Text("Êtes-vous sûr de vouloir supprimer \"$productName\" ?"),
+          content:
+              Text("Êtes-vous sûr de vouloir supprimer \"$productName\" ?"),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
@@ -264,7 +321,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Supprimer", style: TextStyle(color: Colors.red)),
+              child:
+                  const Text("Supprimer", style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -333,7 +391,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Déconnexion", style: TextStyle(color: Colors.red)),
+              child: const Text("Déconnexion",
+                  style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -343,7 +402,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     if (confirm == true) {
       await logoutUser();
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login'); // Adaptez à votre route de login
+        Navigator.pushReplacementNamed(
+            context, '/login'); // Adaptez à votre route de login
       }
     }
   }
@@ -352,9 +412,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   String _formatPrice(String price) {
     try {
       final double amount = double.parse(price);
-      return '${amount.toStringAsFixed(2)} €';
+      return '${amount.toStringAsFixed(2)} \$';
     } catch (e) {
-      return '$price €';
+      return '$price \$';
     }
   }
 
@@ -387,7 +447,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const AddProductScreen()),
+                MaterialPageRoute(
+                    builder: (context) => const AddProductScreen()),
               ).then((_) => _loadMyProducts());
             },
             tooltip: "Ajouter un produit",
@@ -516,7 +577,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey),
+            const Icon(Icons.inventory_2_outlined,
+                size: 80, color: Colors.grey),
             const SizedBox(height: 16),
             const Text(
               "Aucun produit",
@@ -537,7 +599,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const AddProductScreen()),
+                  MaterialPageRoute(
+                      builder: (context) => const AddProductScreen()),
                 );
               },
               icon: const Icon(Icons.add),
@@ -593,7 +656,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                 ],
               ),
             ),
-          
+
           // Liste des produits
           Expanded(
             child: ListView.builder(
@@ -606,147 +669,165 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                 final String description = product['description'] ?? '';
                 final String date = product['date_created'] ?? '';
                 final List<dynamic> images = product['images'] ?? [];
-                final String? imageUrl = images.isNotEmpty ? images[0]['src'] : null;
+                final String? imageUrl =
+                    images.isNotEmpty ? images[0]['src'] : null;
                 final int productId = product['id'];
 
-                return Card(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  elevation: 2,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (imageUrl != null)
-                        ClipRRect(
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            topRight: Radius.circular(12),
-                          ),
-                          child: Image.network(
-                            imageUrl,
+                return GestureDetector(
+                  onTap: () {
+                    // Naviguer vers l'écran de détails du produit
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ImageViewerScreen(images: images),
+                      ),
+                    );
+                  },
+                  child: Card(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    elevation: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (imageUrl != null)
+                          ClipRRect(
+                            borderRadius: const BorderRadius.only(
+                              topLeft: Radius.circular(12),
+                              topRight: Radius.circular(12),
+                            ),
+                            child: Image.network(
+                              imageUrl,
+                              height: 150,
+                              width: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Container(
+                                  height: 150,
+                                  color: Colors.grey[200],
+                                  child: const Icon(Icons.image,
+                                      size: 50, color: Colors.grey),
+                                );
+                              },
+                            ),
+                          )
+                        else
+                          Container(
                             height: 150,
                             width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                height: 150,
-                                color: Colors.grey[200],
-                                child: const Icon(Icons.image, size: 50, color: Colors.grey),
-                              );
-                            },
+                            color: Colors.grey[200],
+                            child: const Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.image_not_supported,
+                                    size: 50, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text("Aucune image",
+                                    style: TextStyle(color: Colors.grey)),
+                              ],
+                            ),
                           ),
-                        )
-                      else
-                        Container(
-                          height: 150,
-                          width: double.infinity,
-                          color: Colors.grey[200],
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.image_not_supported, size: 50, color: Colors.grey),
-                              SizedBox(height: 8),
-                              Text("Aucune image", style: TextStyle(color: Colors.grey)),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue[50],
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      _formatPrice(price),
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  const Icon(Icons.calendar_today,
+                                      size: 14, color: Colors.grey),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    "Créé le ${_formatDate(date)}",
+                                    style: const TextStyle(
+                                        fontSize: 12, color: Colors.grey),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  // ➡️ Modifiez le onPressed du bouton "Modifier" :
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () async {
+                                        // 💡 Le produit (Map<String, dynamic>) doit être passé au nouvel écran
+                                        final bool? result =
+                                            await Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => EditProductScreen(
+                                                product:
+                                                    product), // 'product' est la Map<String, dynamic>
+                                          ),
+                                        );
+
+                                        // Si l'édition a réussi et que l'on revient (result est true), rafraîchir la liste
+                                        if (result == true) {
+                                          // ⚠️ Vous devez appeler ici votre fonction de rechargement des produits
+                                          // Exemple : _fetchProducts();
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                                content:
+                                                    Text("Liste rafraîchie.")),
+                                          );
+                                        }
+                                      },
+                                      icon: const Icon(Icons.edit, size: 18),
+                                      label: const Text("Modifier"),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () =>
+                                          _deleteProduct(productId, name),
+                                      icon: const Icon(Icons.delete,
+                                          size: 18, color: Colors.red),
+                                      label: const Text("Supprimer",
+                                          style: TextStyle(color: Colors.red)),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
-
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    name,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.blue[50],
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    _formatPrice(price),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 8),
-
-                            if (description.isNotEmpty)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    description.length > 100 
-                                      ? '${description.substring(0, 100)}...' 
-                                      : description,
-                                    style: const TextStyle(color: Colors.grey),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  const SizedBox(height: 8),
-                                ],
-                              ),
-
-                            Row(
-                              children: [
-                                const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                                const SizedBox(width: 4),
-                                Text(
-                                  "Créé le ${_formatDate(date)}",
-                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 12),
-
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text("Modification - À implémenter"),
-                                        ),
-                                      );
-                                    },
-                                    icon: const Icon(Icons.edit, size: 18),
-                                    label: const Text("Modifier"),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    onPressed: () => _deleteProduct(productId, name),
-                                    icon: const Icon(Icons.delete, size: 18, color: Colors.red),
-                                    label: const Text("Supprimer", style: TextStyle(color: Colors.red)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 );
               },

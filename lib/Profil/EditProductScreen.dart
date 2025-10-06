@@ -21,9 +21,9 @@ class _EditProductScreenState extends State<EditProductScreen> {
   late TextEditingController _descriptionController;
   bool _isUpdating = false;
 // Réutilisez vos constantes d'API depuis AddProductScreen
-  final String _consumerKey = 'ck_898b353c3d1e748271c6e873948caaf87ec30d1e';
-  final String _consumerSecret = 'cs_b2ee223b023699dd8de97b409a23b929963422c2';
-  final String _baseUrl = "https://www.easykivu.com/wp/wp-json/wc/v3";
+  final String _consumerKey = 'ck_20c9eaf44a30b5028558551525a1b24201ce8293';
+  final String _consumerSecret = 'cs_d2f987d16ac480a59f04a5fefdf563a269667ca3';
+  final String _baseUrl = "https://www.babutik.com/wp-json/wc/v3";
 
 // ➡️ Fonction à placer dans la classe qui gère l'état de la liste des produits
 Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) async {

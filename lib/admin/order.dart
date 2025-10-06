@@ -1,70 +1,58 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
+// Importez vos fichiers de support
+import 'package:soko/api_config.dart';
 import 'package:soko/style.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher.dart'; // Assurez-vous que primaryYellow et primaryDarkBlue sont définis ici
 
-// -----------------------------------------------------------------
-// MODÈLE DE DONNÉES (Commande)
-// -----------------------------------------------------------------
-
-class Commande {
-  final String transactionReference; 
+// Définition de la structure de l'objet Order (pour la clarté)
+class Order {
+  final String transactionId;
   final String name;
   final String address;
-  final double? latitude;
-  final double? longitude;
-  final double totalPrice; 
-  final String status;
+  String status; // Peut changer
   final String paymentMethod;
-  final DateTime orderDate;
+  final String orderDate;
+  final double totalPrice;
   final String productsSummary;
+  final double latitude; // Nouvelle propriété pour la latitude
+  final double longitude; // Nouvelle propriété pour la longitude
 
-  Commande({
-    required this.transactionReference,
+  Order({
+    required this.transactionId,
     required this.name,
     required this.address,
-    this.latitude,
-    this.longitude,
-    required this.totalPrice,
     required this.status,
     required this.paymentMethod,
     required this.orderDate,
+    required this.totalPrice,
     required this.productsSummary,
+    this.latitude = 0.0, // Valeur par défaut
+    this.longitude = 0.0, // Valeur par défaut
   });
 
-  factory Commande.fromJson(Map<String, dynamic> json) {
-    // Gestion sécurisée des champs double (pour éviter l'erreur int vs double)
-    double? lat = double.tryParse(json['latitude']?.toString() ?? '');
-    double? lng = double.tryParse(json['longitude']?.toString() ?? '');
-    
-    // S'assurer qu'ils sont null si non valides
-    if (lat == null || lat.isNaN) lat = null;
-    if (lng == null || lng.isNaN) lng = null;
-
-    // FIX INT/DOUBLE: utilise 'num' (int ou double) puis convertit en double.
-    num priceAsNum = json['total_price'] ?? 0;
-    double finalPrice = priceAsNum.toDouble();
-
-    return Commande(
-      transactionReference: json['transaction_id'] as String,
+  factory Order.fromJson(Map<String, dynamic> json) {
+    return Order(
+      transactionId: json['transaction_id'] as String,
       name: json['name'] as String,
       address: json['address'] as String,
-      latitude: lat,
-      longitude: lng,
-      totalPrice: finalPrice, 
       status: json['status'] as String,
       paymentMethod: json['payment_method'] as String,
-      orderDate: DateTime.parse(json['order_date'] as String),
+      orderDate: json['order_date'] as String,
+      totalPrice: json['total_price'] is int
+          ? (json['total_price'] as int).toDouble()
+          : json['total_price'] as double,
       productsSummary: json['products_summary'] as String,
+      latitude: json.containsKey('latitude')
+          ? (json['latitude'] as num).toDouble()
+          : 0.0,
+      longitude: json.containsKey('longitude')
+          ? (json['longitude'] as num).toDouble()
+          : 0.0,
     );
   }
 }
-
-// -----------------------------------------------------------------
-// WIDGET PRINCIPAL (OrdersPage)
-// -----------------------------------------------------------------
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({super.key});
@@ -74,442 +62,396 @@ class OrdersPage extends StatefulWidget {
 }
 
 class _OrdersPageState extends State<OrdersPage> {
-  // ⚠️ ADAPTEZ CES URLS AVANT D'EXÉCUTER
-  static const String _apiUrl = 'http://192.168.1.64/soko/api_order.php';
-  static const String _updateApiUrl = 'http://192.168.1.64/soko/statut_order.php';
+  List<Order> _orders = [];
+  bool _isLoading = true;
+  String _selectedStatusFilter = 'TOUS'; // Par défaut
 
-  late Future<List<Commande>> _futureOrders;
-  
-  // États pour les filtres
-  DateTimeRange? _selectedDateRange; 
-  String? _selectedStatusFilter; 
-  
-  // Options de statut
-  final List<String> _statusOptions = ['Tous', 'EN COURS', 'TERMINER', 'ANNULER'];
-  final List<String> _availableStatuses = ['EN COURS', 'TERMINER', 'ANNULER'];
+  // Liste des statuts disponibles pour le filtre et la mise à jour
+  final List<String> _validStatuses = [
+    'TOUS', // Pour le filtre uniquement
+    'EN COURS',
+    'TERMINER',
+    'ANNULER',
+  ];
+
+  // Liste des statuts sans l'option 'TOUS', utilisée pour la modification de commande.
+  late final List<String> _updatableStatuses =
+      _validStatuses.where((s) => s != 'TOUS').toList();
 
   @override
   void initState() {
     super.initState();
-    _selectedStatusFilter = _statusOptions.first; 
-    _futureOrders = fetchOrders();
+    _fetchOrders();
   }
 
-  // --- LOGIQUE DE GESTION DES COMMANDES (Fetch/Update) ---
+  // ==================================================================
+  // 1. LOGIQUE DE FILTRAGE DES COMMANDES
+  // ==================================================================
 
-  Future<List<Commande>> fetchOrders() async {
+  Future<void> _fetchOrders() async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      String url = _apiUrl;
-      Uri uri = Uri.parse(url);
-      
-      Map<String, String> queryParams = {};
+      final Map<String, dynamic> queryParams = {};
 
-      // 1. Filtre par Date
-      if (_selectedDateRange != null) {
-        final startDate = DateFormat('yyyy-MM-dd').format(_selectedDateRange!.start);
-        final endDate = DateFormat('yyyy-MM-dd').format(_selectedDateRange!.end);
-        queryParams['start_date'] = startDate;
-        queryParams['end_date'] = endDate;
-      }
-      
-      // 2. Filtre par Statut
-      if (_selectedStatusFilter != null && _selectedStatusFilter!.toUpperCase() != 'TOUS') {
-        queryParams['status'] = _selectedStatusFilter!.toUpperCase();
+      // CLÉ DU FILTRAGE: Envoi du statut sélectionné à l'API PHP
+      if (_selectedStatusFilter != 'TOUS') {
+        queryParams['status'] = _selectedStatusFilter;
       }
 
-      uri = uri.replace(queryParameters: queryParams);
+      final uri = Uri.parse('${ApiConfig.BASE_URL}/api_order.php').replace(
+          queryParameters:
+              queryParams.map((k, v) => MapEntry(k, v.toString())));
 
       final response = await http.get(uri);
 
       if (response.statusCode == 200) {
-        List<dynamic> jsonList = jsonDecode(response.body);
-        return jsonList.map((json) => Commande.fromJson(json)).toList();
-      } else {
-        throw Exception('Échec du chargement des commandes. Code: ${response.statusCode}');
-      }
-    } catch (e) {
-      throw Exception('Erreur de connexion : $e');
-    }
-  }
-
-  Future<void> _updateOrderStatus(String transactionId, String newStatus) async {
-    final response = await http.post(
-      Uri.parse(_updateApiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'transaction_id': transactionId,
-        'status': newStatus,
-      }),
-    );
-
-    final responseJson = jsonDecode(response.body);
-    
-    if (mounted) {
-      if (response.statusCode == 200 && responseJson['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(responseJson['message'] ?? 'Statut mis à jour avec succès!')),
-        );
+        final List<dynamic> jsonList = jsonDecode(response.body);
         setState(() {
-          _futureOrders = fetchOrders();
+          _orders = jsonList.map((json) => Order.fromJson(json)).toList();
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Échec de la mise à jour: ${responseJson['message'] ?? 'Erreur inconnue'}')),
-        );
+        throw Exception(
+            'Échec du chargement des commandes: ${response.statusCode}');
       }
-    }
-  }
-
-  // --- LOGIQUE D'INTERFACE UTILISATEUR (Filtre/Dialogues) ---
-
-  Future<void> _selectDateRange() async {
-    final DateTimeRange? newRange = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2023, 1, 1),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      currentDate: DateTime.now(),
-      initialDateRange: _selectedDateRange,
-      locale: const Locale('fr', 'FR'),
-    );
-
-    if (newRange != null) {
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Erreur de connexion aux commandes: ${e.toString()}'),
+            backgroundColor: Colors.red),
+      );
+    } finally {
       setState(() {
-        _selectedDateRange = newRange;
-        _futureOrders = fetchOrders();
+        _isLoading = false;
       });
     }
   }
 
-  void _clearDateRange() {
-    setState(() {
-      _selectedDateRange = null;
-      _futureOrders = fetchOrders();
-    });
-  }
+  // ==================================================================
+  // 2. LOGIQUE DE MISE À JOUR DU STATUT
+  // ==================================================================
 
-  void _showStatusUpdateDialog(Commande order) {
-    String? selectedStatus = order.status; 
+  Future<void> _updateOrderStatus(
+      String transactionId, String newStatus) async {
+    // Assurez-vous que l'API est correctement définie dans ApiConfig
+    final url = '${ApiConfig.BASE_URL}/statut_order.php';
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Mettre à jour Commande #${order.transactionReference}'),
-          content: StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              // Détermine la valeur initiale, en s'assurant qu'elle est dans la liste des options
-              String? initialStatus = _availableStatuses.contains(order.status.toUpperCase()) 
-                  ? order.status.toUpperCase() 
-                  : null;
+    // Statut en majuscules pour le backend (ex: 'pending' -> 'PENDING')
+    final String statusForBackend = newStatus.toUpperCase();
 
-              return DropdownButtonFormField<String>(
-                value: initialStatus,
-                decoration: const InputDecoration(labelText: 'Nouveau Statut'),
-                items: _availableStatuses.map((String status) {
-                  return DropdownMenuItem<String>(
-                    value: status,
-                    child: Text(status),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  setState(() {
-                    selectedStatus = newValue;
-                  });
-                },
-              );
-            },
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Annuler'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
-              child: const Text('Confirmer'),
-              onPressed: selectedStatus == null
-                  ? null
-                  : () {
-                      Navigator.of(context).pop();
-                      if (selectedStatus != null && selectedStatus != order.status) {
-                        _updateOrderStatus(order.transactionReference, selectedStatus!);
-                      }
-                    },
-            ),
-          ],
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'transaction_id': transactionId,
+          // Envoyer le statut en MAJUSCULES
+          'status': statusForBackend,
+        }),
+      );
+
+      final responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        // 💡 CORRECTION : Trouver la commande dans la liste locale
+        final orderIndex =
+            _orders.indexWhere((o) => o.transactionId == transactionId);
+
+        if (orderIndex != -1) {
+          // Mise à jour locale du statut pour rafraîchir l'UI immédiatement
+          setState(() {
+            // Mettez à jour avec la valeur originale (minuscule ou correcte) pour l'affichage,
+            // mais assurez-vous que la classe OrderData gère bien la casse pour l'UI.
+            _orders[orderIndex].status = newStatus;
+          });
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Statut mis à jour à ${statusForBackend}.'),
+              backgroundColor: Colors.green),
         );
-      },
-    );
-  }
 
-  // --- FONCTIONS UTILITAIRES ---
-
-  Color _getStatusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'TERMINER':
-      case 'CONFIRMED':
-        return Colors.green;
-      case 'EN COURS':
-      case 'PENDING':
-        return Colors.orange;
-      case 'ANNULER':
-      case 'FAILED':
-        return Colors.red;
-      default:
-        return Colors.blueGrey;
+        // Optionnel : recharger la liste si un filtre est actif
+        // Assurez-vous que _selectedStatusFilter et _fetchOrders existent dans votre classe.
+        if (_selectedStatusFilter != 'TOUS' &&
+            _selectedStatusFilter != newStatus) {
+          // Si le nouveau statut ne correspond pas au filtre actuel, on recharge la liste pour masquer la commande.
+          _fetchOrders();
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Échec de la mise à jour: ${responseData['message'] ?? 'Erreur serveur'}'),
+              backgroundColor: Colors.orange),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Erreur réseau lors de la mise à jour: $e'),
+            backgroundColor: Colors.red),
+      );
     }
   }
 
-  void _launchMap(double lat, double lng) async {
-    final urlString = 'http://maps.google.com/maps?q=$lat,$lng';
-    final uri = Uri.parse(urlString);
-    
+  // ==================================================================
+  // 3. INTERFACE UTILISATEUR (UI)
+  // ==================================================================
+  Future<void> _launchMap(double latitude, double longitude) async {
+    // Construction de l'URL Google Maps avec les coordonnées
+    final String googleMapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
+
+    final Uri uri = Uri.parse(googleMapsUrl);
+
+    // Vérifie si l'application peut lancer l'URL
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
+      // Gestion de l'erreur
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible d\'ouvrir la carte.')),
+          SnackBar(
+              content: Text(
+                  'Impossible d\'ouvrir la carte pour $latitude, $longitude')),
         );
       }
     }
   }
 
-  // --- WIDGET BUILD ---
-  
+// À placer dans la classe d'état de votre Widget (ex: _OrderHistoryScreenState)
+
+// Fonction utilitaire pour extraire le numéro de téléphone du client
+  String _extractClientPhoneNumber(String paymentMethod) {
+    // Cas FlexPay (ex: 'FlexPay:243812345678')
+    if (paymentMethod.contains(':')) {
+      return paymentMethod.split(':').last;
+    }
+    // Cas WhatsApp ou autres (le numéro est le champ lui-même)
+    return paymentMethod;
+  }
+
+  Future<void> _launchWhatsAppClient(dynamic order) async {
+    // Le numéro de téléphone du client est stocké dans paymentMethod dans votre DB
+    final String clientPhoneNumber =
+        _extractClientPhoneNumber(order.paymentMethod);
+    final String transactionId = order.transactionId;
+
+    if (clientPhoneNumber.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content:
+                  Text("Numéro de client non trouvé pour cette commande.")),
+        );
+      }
+      return;
+    }
+
+    // Formatage du numéro pour WhatsApp (doit inclure le code pays sans le '+', ex: 243...)
+    // WhatsApp fonctionne mieux avec le code pays (243) directement collé au numéro.
+
+    // Message pré-rempli pour l'administrateur
+    final message =
+        'Bonjour, je vous contacte au sujet de votre commande n° $transactionId. Elle est actuellement au statut : ${order.status}.';
+
+    // Construction de l'URL WhatsApp
+    final url = Uri.parse(
+        'https://api.whatsapp.com/send?phone=$clientPhoneNumber&text=${Uri.encodeComponent(message)}');
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    "Impossible d'ouvrir WhatsApp pour le numéro $clientPhoneNumber.")),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors du lancement de WhatsApp: $e')),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Commandes',style: TextStyle(color: Colors.white),),
+        title: const Text(
+          'Gestion des Commandes',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: primaryYellow,
         actions: [
-          // Filtre par Statut (Dropdown)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedStatusFilter,
-                icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
-                style: const TextStyle(color: Colors.white, fontSize: 16),
-                dropdownColor: const Color(0xFF2C3E50),
-                items: _statusOptions.map((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value, style: const TextStyle(color: Colors.white)),
-                  );
-                }).toList(),
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedStatusFilter = newValue;
-                      _futureOrders = fetchOrders(); 
-                    });
-                  }
-                },
-              ),
-            ),
-          ),
-          // Filtre par Date
           IconButton(
-            icon: const Icon(Icons.calendar_today, color: Colors.white),
-            onPressed: _selectDateRange,
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: _fetchOrders,
           ),
-          if (_selectedDateRange != null)
-            IconButton(
-              icon: const Icon(Icons.clear, color: Colors.white),
-              onPressed: _clearDateRange,
-              tooltip: 'Annuler le filtre de date',
-            ),
         ],
       ),
       body: Column(
         children: [
-          // Affichage des filtres actifs
-          if (_selectedDateRange != null || (_selectedStatusFilter != null && _selectedStatusFilter!.toUpperCase() != 'TOUS'))
-            Container(
-              padding: const EdgeInsets.all(8.0),
-              color: Colors.grey[200],
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_selectedDateRange != null)
-                    Expanded(
-                      child: Text(
-                        'Date: ${DateFormat('dd/MM/yy').format(_selectedDateRange!.start)} - ${DateFormat('dd/MM/yy').format(_selectedDateRange!.end)}',
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue, fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  if (_selectedStatusFilter != null && _selectedStatusFilter!.toUpperCase() != 'TOUS')
-                    Expanded(
-                      child: Text(
-                        'Statut: ${_selectedStatusFilter}',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: _getStatusColor(_selectedStatusFilter!), fontSize: 12),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                ],
+          // Filtre de Statut (Fonctionne pour le triage)
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: DropdownButtonFormField<String>(
+              decoration: const InputDecoration(
+                labelText: 'Filtrer par Statut',
+                border: OutlineInputBorder(),
               ),
+              value: _selectedStatusFilter,
+              items: _validStatuses
+                  .map((status) => DropdownMenuItem(
+                        value: status,
+                        child: Text(status),
+                      ))
+                  .toList(),
+              onChanged: (String? newValue) {
+                if (newValue != null) {
+                  setState(() {
+                    _selectedStatusFilter = newValue;
+                  });
+                  _fetchOrders(); // Recharger les commandes avec le nouveau filtre
+                }
+              },
             ),
+          ),
 
           Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                setState(() {
-                  _futureOrders = fetchOrders();
-                });
-              },
-              child: FutureBuilder<List<Commande>>(
-                future: _futureOrders,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Erreur: ${snapshot.error}'));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(child: Text('Aucune commande trouvée.'));
-                  } else {
-                    final orders = snapshot.data!;
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(8.0),
-                      itemCount: orders.length,
-                      itemBuilder: (context, index) {
-                        final order = orders[index];
-                        return Card(
-                          elevation: 4,
-                          margin: const EdgeInsets.symmetric(vertical: 8),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Référence: ${order.transactionReference}', 
-                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF007BFF)),
-                                    ),
-                                    // BOUTON DE MODIFICATION DU STATUT
-                                    ElevatedButton.icon(
-                                      onPressed: () => _showStatusUpdateDialog(order),
-                                      icon: const Icon(Icons.edit, size: 18),
-                                      label: const Text('Statut'),
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue,
-                                        foregroundColor: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Divider(),
-                                
-                                // Client, Adresse, Carte
-                                Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Icon(Icons.person, size: 20, color: Colors.blueGrey),
-                                    const SizedBox(width: 8),
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(order.name, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                          Text(order.address, style: const TextStyle(fontSize: 14)),
-                                          if (order.latitude != null && order.longitude != null)
-                                            Padding(
-                                              padding: const EdgeInsets.only(top: 4.0),
-                                              child: OutlinedButton.icon(
-                                                onPressed: () => _launchMap(order.latitude!, order.longitude!),
-                                                icon: const Icon(Icons.map, size: 18),
-                                                label: const Text('Voir la carte'),
-                                                style: OutlinedButton.styleFrom(
-                                                  foregroundColor: Colors.teal,
-                                                  side: const BorderSide(color: Colors.teal),
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                
-                                const SizedBox(height: 10),
-                                
-                                // Statut et Montant
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        const Text('Statut:', style: TextStyle(color: Colors.grey)),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: _getStatusColor(order.status).withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(15),
-                                          ),
-                                          child: Text(
-                                            order.status.toUpperCase(),
-                                            style: TextStyle(
-                                              color: _getStatusColor(order.status),
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 13,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    Column(
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        const Text('Montant Total:', style: TextStyle(color: Colors.grey)),
-                                        Text(
-                                          NumberFormat.currency(locale: 'fr_CD', symbol: '\$').format(order.totalPrice),
-                                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                        ),
-                                        Text(
-                                          'Paiement: ${order.paymentMethod}',
-                                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-                                
-                                const SizedBox(height: 10),
-                                
-                                // Articles et Date
-                                const Text('Articles Commandés:', style: TextStyle(color: Colors.grey)),
-                                Text(
-                                  order.productsSummary,
-                                  style: const TextStyle(fontSize: 14, fontStyle: FontStyle.italic),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                
-                                const SizedBox(height: 5),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView.builder(
+                    itemCount: _orders.length,
+                    itemBuilder: (context, index) {
+                      final order = _orders[index];
 
-                                Text(
-                                  'Date: ${DateFormat('dd/MM/yyyy HH:mm').format(order.orderDate.toLocal())}',
-                                  style: TextStyle(fontSize: 12, color: Colors.grey[500]),
-                                ),
-                              ],
-                            ),
+                      // Détermine la valeur initiale du Dropdown pour la modification
+                      // C'EST LA CORRECTION CLÉ POUR ÉVITER LE CRASH.
+                      final String dropdownValue =
+                          _updatableStatuses.contains(order.status)
+                              ? order.status
+                              : 'EN COURS'; // Valeur de secours valide
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'ID: ${order.transactionId}',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green),
+                              ),
+                              Divider(),
+                              const SizedBox(height: 5),
+                              Text('Client: ${order.name}'),
+                              //   Text('Adresse: ${order.address}'),
+                              Text('Méthode: ${order.paymentMethod}'),
+                              Text(
+                                'Total: ${order.totalPrice.toStringAsFixed(2)} \$',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                              ),
+                              Text('Produits: ${order.productsSummary}',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontStyle: FontStyle.italic)),
+                              //  const Divider(),
+                              // Assurez-vous que les coordonnées existent et sont valides avant d'afficher le bouton
+                              // Affichage et modification du statut
+                              Padding(
+                                padding: const EdgeInsets.only(top: 8.0),
+                                child: GestureDetector(
+                                    onTap: () {
+                                      // Appel avec l'objet de la commande
+                                    },
+                                    child: Text('Contacter le client',
+                                        style: TextStyle(
+                                            color: primaryYellow,
+                                            //      decoration: TextDecoration.underline,
+                                            fontWeight: FontWeight.bold))),
+                              ),
+
+                              Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.pin_drop,
+                                          color: Colors.red),
+                                      onPressed: () {
+                                        // Appel de la fonction de lancement de la carte
+                                        double lat = order.latitude;
+                                        double lon = order.longitude;
+                                        _launchMap(lat, lon);
+                                      },
+                                    ),
+                                    Text(order.address),
+                                    ElevatedButton.icon(
+                                      onPressed: () {
+                                        _launchWhatsAppClient(order);
+                                      },
+                                      icon: const Icon(Icons.call,
+                                          color: Colors.white),
+                                      label: const Text('WhatsApp Client',
+                                          style:
+                                              TextStyle(color: Colors.white)),
+                                    ),
+                                  ]),
+
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('Statut actuel: ${order.status}',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: order.status == 'TERMINER'
+                                              ? Colors.green
+                                              : Colors.orange)),
+
+                                  // Dropdown pour la modification (CORRIGÉ)
+                                  DropdownButton<String>(
+                                    value:
+                                        dropdownValue, // Utilise la valeur sécurisée
+                                    items:
+                                        _updatableStatuses // Liste sans 'TOUS'
+                                            .map((String value) {
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(value),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null) {
+                                        _updateOrderStatus(
+                                            order.transactionId, newValue);
+                                      }
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    );
-                  }
-                },
-              ),
-            ),
+                        ),
+                      );
+                    },
+                  ),
           ),
         ],
       ),

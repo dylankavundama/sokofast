@@ -1,2 +1,2 @@
 String initServer = 'www.babutik.com';
-const String baseUrl = 'http://192.168.1.64/soko';
+const String baseUrl = 'https://babutik.com/soko';

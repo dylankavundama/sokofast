@@ -1,23 +1,28 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:soko/style.dart';
-// import 'package:soko/Profil/mes_produits.dart'; // Assurez-vous que ce chemin est correct
+import 'package:firebase_auth/firebase_auth.dart';
+// Importez vos styles si nécessaire
+// import 'package:soko/style.dart'; 
 
 // =======================================================
-// ⚠️ CONSTANTES DE CONFIGURATION - À DÉFINIR
+// ⚠️ CONSTANTES DE CONFIGURATION - À METTRE À JOUR
 // =======================================================
-const String _consumerKey = 'ck_898b353c3d1e748271c6e873948caaf87ec30d1e';
-const String _consumerSecret = 'cs_b2ee223b023699dd8de97b409a23b929963422c2';
-const String _baseUrl = "https://www.easykivu.com/wp/wp-json/wc/v3";
-const String _wpBaseUrl = "https://www.easykivu.com/wp";
+// CLÉS WOOCOMMERCE (UTILISÉES POUR L'API WC /wc/v2)
+const String _consumerKey = 'ck_20c9eaf44a30b5028558551525a1b24201ce8293';
+const String _consumerSecret = 'cs_d2f987d16ac480a59f04a5fefdf563a269667ca3';
 
-// ⚠️ REMPLACEZ AVEC VOS VRAIS IDENTIFIANTS WORDPRESS (pour l'upload image/JWT)
-const String _wpUsername = "admin"; // Votre email ou username WordPress
-const String _wpPassword = "igUA 9IIx Vqhg cuXj k1qR ggZ7";
+// IDENTIFIANTS POUR L'API MEDIA (UTILISÉES POUR L'API WP /wp/v2/media)
+// Remplacez ces valeurs par le nom d'utilisateur/email et le mot de passe d'application généré.
+const String _mediaUsername = "info@babutik.com"; 
+const String _mediaPassword = "nQs5 LctW 9hyO Mm33 GB7n gyNQ"; 
+
+// Points de terminaison
+const String _baseUrl = "https://www.babutik.com";
+const String _wcApiPath = "/wp-json/wc/v2";
+const String _wpApiPath = "/wp-json/wp/v2";
 
 // =======================================================
 // 📚 Modèle de Catégorie (simplifié)
@@ -54,16 +59,27 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   XFile? _selectedImage;
   bool _isPublishing = false;
-  String? _jwtToken;
 
   List<ProductCategory> _categories = [];
   ProductCategory? _selectedCategory;
   bool _isLoadingCategories = true;
   String? _categoryError;
 
+  // En-têtes d'authentification précalculés
+  late final Map<String, String> _wcAuthHeaders;
+  late final Map<String, String> _mediaAuthHeaders;
+
   @override
   void initState() {
     super.initState();
+    // 1. Calcul de l'en-tête Basic Auth pour l'API WooCommerce (WC)
+    final wcAuth = base64Encode(utf8.encode("$_consumerKey:$_consumerSecret"));
+    _wcAuthHeaders = {"Authorization": "Basic $wcAuth"};
+
+    // 2. Calcul de l'en-tête Basic Auth pour l'API Media (WP)
+    final mediaAuth = base64Encode(utf8.encode("$_mediaUsername:$_mediaPassword"));
+    _mediaAuthHeaders = {"Authorization": "Basic $mediaAuth"};
+
     _fetchCategories();
   }
 
@@ -76,7 +92,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   // =======================================================
-  // 🔄 LOGIQUE DE RÉCUPÉRATION DES CATÉGORIES
+  // 🔄 LOGIQUE DE RÉCUPÉRATION DES CATÉGORIES (WooCommerce)
   // =======================================================
   Future<void> _fetchCategories() async {
     setState(() {
@@ -85,24 +101,22 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
 
     try {
-      final auth = base64Encode(utf8.encode("$_consumerKey:$_consumerSecret"));
       final response = await http.get(
-        Uri.parse("$_baseUrl/products/categories?per_page=100"),
-        headers: {"Authorization": "Basic $auth"},
+        Uri.parse("$_baseUrl$_wcApiPath/products/categories?per_page=100"),
+        headers: _wcAuthHeaders, // Utilisation des clés WC
       );
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
         _categories =
             jsonList.map((json) => ProductCategory.fromJson(json)).toList();
-        // Optionnel : Sélectionner la première catégorie par défaut
-        // _selectedCategory = _categories.isNotEmpty ? _categories.first : null;
       } else {
-        throw Exception("Failed to load categories: ${response.statusCode}");
+        throw Exception(
+            "Échec du chargement des catégories: ${response.statusCode}");
       }
     } catch (e) {
       print("❌ Erreur de récupération des catégories: $e");
-      _categoryError = "Erreur de chargement des catégories: $e";
+      _categoryError = "Erreur de chargement des catégories. Vérifiez les clés WC.";
     } finally {
       setState(() {
         _isLoadingCategories = false;
@@ -122,61 +136,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   // =======================================================
-  // 🔑 OBTAIN JWT TOKEN
+  // 📤 UPLOAD IMAGE AVEC MOT DE PASSE D'APPLICATION (WP REST API)
   // =======================================================
-  Future<bool> _getJWTToken() async {
-    if (_jwtToken != null) return true; // Token déjà obtenu
-
-    try {
-      print("🔐 Tentative de connexion JWT...");
-      final response = await http.post(
-        Uri.parse("$_wpBaseUrl/wp-json/jwt-auth/v1/token"),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'username': _wpUsername,
-          'password': _wpPassword,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _jwtToken = data['token'];
-        print("✅ JWT Token obtenu avec succès");
-        return true;
-      } else {
-        print("❌ Erreur JWT: ${response.statusCode}");
-        return false;
-      }
-    } catch (e) {
-      print("❌ Exception JWT: $e");
-      return false;
-    }
-  }
-
-  // =======================================================
-  // 📤 UPLOAD IMAGE WITH JWT
-  // =======================================================
-  Future<int?> _uploadImageWithJWT() async {
+  Future<int?> _uploadImage() async {
     if (_selectedImage == null) return null;
 
-    if (!await _getJWTToken()) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("❌ Échec authentification WordPress pour l'image"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return null;
-    }
-
     try {
+      print("📷 Tentative d'upload d'image avec Mot de passe d'application...");
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse("$_wpBaseUrl/wp-json/wp/v2/media"),
+        Uri.parse("$_baseUrl$_wpApiPath/media"), // API Media de WordPress
       );
-      request.headers['Authorization'] = 'Bearer $_jwtToken';
+
+      // Utilisation des en-têtes d'auth du Mot de passe d'application
+      request.headers.addAll({
+        'Content-Disposition': 'attachment; filename="${_selectedImage!.name}"',
+        'Content-Type': 'image/jpeg', 
+        ..._mediaAuthHeaders, // Utilisation des clés WP Media
+      });
+      
       request.files.add(
         await http.MultipartFile.fromPath(
           'file',
@@ -189,7 +167,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       final jsonResponse = jsonDecode(responseData);
 
       if (response.statusCode == 201) {
-        print("✅ IMAGE UPLOADÉE AVEC SUCCÈS");
+        print("✅ IMAGE UPLOADÉE AVEC SUCCÈS (ID: ${jsonResponse['id']})");
         return jsonResponse['id'];
       } else {
         print("❌ ÉCHEC UPLOAD: ${jsonResponse['message']}");
@@ -227,18 +205,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     setState(() => _isPublishing = true);
 
-    final auth = base64Encode(utf8.encode("$_consumerKey:$_consumerSecret"));
-    final headers = {
-      "Authorization": "Basic $auth",
-      "Content-Type": "application/json",
-    };
-
     try {
       // 1. Uploader l'image
       int? imageId;
       if (_selectedImage != null) {
-        imageId = await _uploadImageWithJWT();
-        // La gestion d'erreur de l'upload est déjà dans _uploadImageWithJWT
+        imageId = await _uploadImage();
+        if (_selectedImage != null && imageId == null) {
+           // Si l'image a été sélectionnée mais l'upload a échoué, on arrête.
+           throw Exception("Échec de l'upload d'image. Arrêt de la création du produit.");
+        }
       }
 
       // 2. Préparer les données du produit
@@ -248,11 +223,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         "regular_price": _priceController.text,
         "description": _descriptionController.text,
         "status": "publish",
-        // AJOUT DE LA CATÉGORIE
         "categories": [
           {"id": _selectedCategory!.id}
         ],
-        // MÉTADONNÉES
+        // MÉTADONNÉES (pour le vendeur)
         "meta_data": [
           {
             "key": "vendor_user_id",
@@ -274,8 +248,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       // 4. Créer le produit
       final response = await http.post(
-        Uri.parse("$_baseUrl/products"),
-        headers: headers,
+        Uri.parse("$_baseUrl$_wcApiPath/products"),
+        // Fusionner les en-têtes WC avec l'en-tête Content-Type JSON
+        headers: {..._wcAuthHeaders, "Content-Type": "application/json"},
         body: jsonEncode(productData),
       );
 
@@ -283,14 +258,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (response.statusCode == 201) {
         final product = jsonDecode(response.body);
-        final hasImage =
-            product['images'] != null && product['images'].isNotEmpty;
+        final hasImage = product['images'] != null && product['images'].isNotEmpty;
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                hasImage ? "✅ Produit créé avec image!" : "✅ Produit créé!",
+                hasImage ? "✅ Produit créé avec image!" : "✅ Produit créé sans image.",
               ),
               backgroundColor: hasImage ? Colors.green : Colors.blue,
               duration: const Duration(seconds: 3),
@@ -307,7 +281,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Erreur: $e"),
+            content: Text("Erreur de publication: $e"),
             backgroundColor: Colors.red,
           ),
         );
@@ -328,27 +302,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     setState(() {
       _selectedImage = null;
       _selectedCategory = null;
-      _jwtToken = null; // Optionnel, forcer la nouvelle acquisition
     });
-  }
-
-  // =======================================================
-  // 🧪 TEST DE CONNEXION WORDPRESS/JWT
-  // =======================================================
-  Future<void> _testConnection() async {
-    final success = await _getJWTToken();
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            success
-                ? "✅ Connexion WordPress réussie!"
-                : "❌ Échec connexion WordPress",
-          ),
-          backgroundColor: success ? Colors.green : Colors.red,
-        ),
-      );
-    }
   }
 
   // =======================================================
@@ -356,11 +310,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // =======================================================
   @override
   Widget build(BuildContext context) {
+    // Note: 'primaryYellow' n'étant pas défini, j'utilise une couleur standard.
+    final Color primaryYellow = Colors.yellow.shade700; 
+    
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text("ajouter un produit"),
-        actions: [],
+        title: const Text("Ajouter un produit"),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -368,10 +324,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              // ℹ️ Instructions (Raccourcies)
-              const Card(
-                color: Colors.blue,
-                child: Padding(
+              // ℹ️ Instructions 
+              Card(
+                color: Colors.blue.shade700,
+                child: const Padding(
                   padding: EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -382,9 +338,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       SizedBox(height: 8),
-                      Text("1. JWT Auth & REST API actifs.",
+                      Text("1. Clés WC pour Produits/Catégories.",
                           style: TextStyle(color: Colors.white)),
-                      Text("2. Identifiants WP corrects.",
+                      Text("2. Mot de passe d'application pour l'Upload d'image (WP API).",
                           style: TextStyle(color: Colors.white)),
                     ],
                   ),

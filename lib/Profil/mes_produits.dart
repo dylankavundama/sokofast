@@ -59,9 +59,9 @@ class ImageViewerScreen extends StatelessWidget {
   }
 }
 
-const String _consumerKey = 'ck_898b353c3d1e748271c6e873948caaf87ec30d1e';
-const String _consumerSecret = 'cs_b2ee223b023699dd8de97b409a23b929963422c2';
-const String _baseUrl = "https://www.easykivu.com/wp/wp-json/wc/v3";
+const String _consumerKey = 'ck_20c9eaf44a30b5028558551525a1b24201ce8293';
+const String _consumerSecret = 'cs_d2f987d16ac480a59f04a5fefdf563a269667ca3';
+const String _baseUrl = "https://www.babutik.com/wp-json/wc/v3";
 
 class MyProductsScreen extends StatefulWidget {
   const MyProductsScreen({super.key});

@@ -31,7 +31,7 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 android {
-    namespace "com.viz"
+    namespace "com.sokofast.btc"
     compileSdk 36
 
     compileOptions {
@@ -49,7 +49,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.viz"
+        applicationId "com.sokofast.btc"
         minSdkVersion 25
         targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()

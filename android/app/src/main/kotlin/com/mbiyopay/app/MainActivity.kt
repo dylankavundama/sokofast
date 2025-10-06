@@ -1,4 +1,4 @@
-package com.viz
+package com.sokofast.btc
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine

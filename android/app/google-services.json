@@ -107,6 +107,14 @@
           }
         },
         {
+          "client_id": "100681275497-j24n6l1pj1qmv863ma7hshbc7um9vl9t.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.gayux",
+            "certificate_hash": "4854bcb85e894e6e6fb0870189da818b8aca63bd"
+          }
+        },
+        {
           "client_id": "100681275497-n8o1klvq3t2cl7ovtm6ork1js9a8f7af.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -143,6 +151,43 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5heGH0Rni-DuGuyjvMSinZ7IKIy_Jcns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:100681275497:android:039721b5d1b0d13bfb2af8",
+        "android_client_info": {
+          "package_name": "com.sokofast.btc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "100681275497-ckg1cpupuh94gfp63ptfn22647400ngh.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sokofast.btc",
+            "certificate_hash": "8694347a3a88ad6387d758d31d27e6053ab59133"
+          }
+        },
         {
           "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
           "client_type": 3

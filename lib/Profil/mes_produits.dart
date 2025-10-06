@@ -64,7 +64,7 @@ const String _consumerSecret = 'cs_b2ee223b023699dd8de97b409a23b929963422c2';
 const String _baseUrl = "https://www.easykivu.com/wp/wp-json/wc/v3";
 
 class MyProductsScreen extends StatefulWidget {
-  const MyProductsScreen({Key? key}) : super(key: key);
+  const MyProductsScreen({super.key});
 
   @override
   State<MyProductsScreen> createState() => _MyProductsScreenState();

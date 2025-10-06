@@ -10,12 +10,15 @@ Future<void> addActivity(String message) async {
   final prefs = await SharedPreferences.getInstance();
   List<String> activities = prefs.getStringList('activities') ?? [];
   activities.insert(0, message); // ajoute en haut
-  if (activities.length > 30)
+  if (activities.length > 30) {
     activities = activities.sublist(0, 30); // limite à 30
+  }
   await prefs.setStringList('activities', activities);
 }
 
 class CategoryScreen extends StatefulWidget {
+  const CategoryScreen({super.key});
+
   @override
   _CategoryScreenState createState() => _CategoryScreenState();
 }

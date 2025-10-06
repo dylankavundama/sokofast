@@ -32,7 +32,7 @@ if (keystorePropertiesFile.exists()) {
 }
 android {
     namespace "com.viz"
-    compileSdk 35
+    compileSdk 36
 
     compileOptions {
         coreLibraryDesugaringEnabled true
@@ -51,7 +51,7 @@ android {
     defaultConfig {
         applicationId "com.viz"
         minSdkVersion 25
-        targetSdkVersion 35
+        targetSdkVersion 36
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

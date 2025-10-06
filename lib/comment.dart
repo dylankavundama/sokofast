@@ -10,7 +10,7 @@ import 'package:html_unescape/html_unescape.dart';
 class CommentSection extends StatefulWidget {
   final int productId;
 
-  const CommentSection({required this.productId, Key? key}) : super(key: key);
+  const CommentSection({required this.productId, super.key});
 
   @override
   _CommentSectionState createState() => _CommentSectionState();

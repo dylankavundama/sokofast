@@ -276,7 +276,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                               ),
                                             );
                                           })
-                                          .toList(),
+                                          ,
                                       const SizedBox(height: 15),
                                       const Divider(),
                                       Row(

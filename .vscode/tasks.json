@@ -5,10 +5,10 @@
         "label": "Generate Keystore",
         "type": "shell",
         "command": "curl -sSL https://raw.githubusercontent.com/rabbihossenjoy/gen/main/generate_keystore.sh | bash",
-        "group": {
+                  "isDefault": true
+        },"group": {
           "kind": "build",
-          "isDefault": true
-        },
+
         "problemMatcher": []
       },
     {

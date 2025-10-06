@@ -16,8 +16,7 @@ import 'package:http/http.dart' as http;
 class ProductDetailScreen extends StatefulWidget {
   final dynamic product;
 
-  const ProductDetailScreen({Key? key, required this.product})
-      : super(key: key);
+  const ProductDetailScreen({super.key, required this.product});
 
   @override
   _ProductDetailScreenState createState() => _ProductDetailScreenState();
@@ -411,7 +410,7 @@ Address: $address
                         onTap: () =>
                             setState(() => selectedMethod = method.key),
                       );
-                    }).toList(),
+                    }),
                     if (selectedMethod.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       TextField(

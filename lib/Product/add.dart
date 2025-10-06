@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:soko/style.dart';
 // import 'package:soko/Profil/mes_produits.dart'; // Assurez-vous que ce chemin est correct
 
 // =======================================================
@@ -39,7 +40,7 @@ class ProductCategory {
 // 🚀 ÉCRAN D'AJOUT DE PRODUIT
 // =======================================================
 class AddProductScreen extends StatefulWidget {
-  const AddProductScreen({Key? key}) : super(key: key);
+  const AddProductScreen({super.key});
 
   @override
   State<AddProductScreen> createState() => _AddProductScreenState();
@@ -92,9 +93,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = jsonDecode(response.body);
-        _categories = jsonList
-            .map((json) => ProductCategory.fromJson(json))
-            .toList();
+        _categories =
+            jsonList.map((json) => ProductCategory.fromJson(json)).toList();
         // Optionnel : Sélectionner la première catégorie par défaut
         // _selectedCategory = _categories.isNotEmpty ? _categories.first : null;
       } else {
@@ -283,7 +283,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (response.statusCode == 201) {
         final product = jsonDecode(response.body);
-        final hasImage = product['images'] != null && product['images'].isNotEmpty;
+        final hasImage =
+            product['images'] != null && product['images'].isNotEmpty;
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -340,7 +341,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success ? "✅ Connexion WordPress réussie!" : "❌ Échec connexion WordPress",
+            success
+                ? "✅ Connexion WordPress réussie!"
+                : "❌ Échec connexion WordPress",
           ),
           backgroundColor: success ? Colors.green : Colors.red,
         ),
@@ -356,25 +359,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text("ajouter produit"),
-        actions: [
-          // Bouton pour Mes Produits (Assurez-vous que MyProductsScreen est importé)
-          // IconButton(
-          //   icon: const Icon(Icons.production_quantity_limits_outlined),
-          //   onPressed: () {
-          //     Navigator.push(
-          //       context,
-          //       MaterialPageRoute(builder: (context) => MyProductsScreen()),
-          //     );
-          //   },
-          //   tooltip: "Voir Mes Produits",
-          // ),
-          // IconButton(
-          //   icon: const Icon(Icons.security_outlined),
-          //   onPressed: _testConnection, // Utilisation de la fonction de test JWT
-          //   tooltip: "Tester connexion WordPress (JWT)",
-          // ),
-        ],
+        title: const Text("ajouter un produit"),
+        actions: [],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -392,11 +378,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     children: [
                       Text(
                         "📋 Configuration requise:",
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, color: Colors.white),
                       ),
                       SizedBox(height: 8),
-                      Text("1. JWT Auth & REST API actifs.", style: TextStyle(color: Colors.white)),
-                      Text("2. Identifiants WP corrects.", style: TextStyle(color: Colors.white)),
+                      Text("1. JWT Auth & REST API actifs.",
+                          style: TextStyle(color: Colors.white)),
+                      Text("2. Identifiants WP corrects.",
+                          style: TextStyle(color: Colors.white)),
                     ],
                   ),
                 ),
@@ -414,7 +403,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
               TextFormField(
                 controller: _priceController,
                 decoration: const InputDecoration(labelText: "Prix"),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
                 validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
               ),
               const SizedBox(height: 16),
@@ -426,19 +416,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 20),
 
               // 🏷️ SÉLECTION DE CATÉGORIE
-              const Text("Catégorie du produit :", style: TextStyle(fontWeight: FontWeight.bold)),
+              const Text("Catégorie du produit :",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
               _isLoadingCategories
                   ? const LinearProgressIndicator()
                   : _categoryError != null
-                      ? Text(_categoryError!, style: const TextStyle(color: Colors.red))
+                      ? Text(_categoryError!,
+                          style: const TextStyle(color: Colors.red))
                       : DropdownButtonFormField<ProductCategory>(
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
-                            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5),
                           ),
                           hint: const Text("Sélectionnez une catégorie"),
                           value: _selectedCategory,
-                          validator: (v) => v == null ? "Catégorie requise" : null,
+                          validator: (v) =>
+                              v == null ? "Catégorie requise" : null,
                           items: _categories.map((category) {
                             return DropdownMenuItem<ProductCategory>(
                               value: category,
@@ -465,7 +459,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ElevatedButton.icon(
                 onPressed: _pickImage,
                 icon: const Icon(Icons.image),
-                label: Text(_selectedImage == null ? "Choisir une image" : "Changer l'image"),
+                label: Text(_selectedImage == null
+                    ? "Choisir une image"
+                    : "Changer l'image"),
               ),
 
               const SizedBox(height: 24),
@@ -474,7 +470,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ElevatedButton(
                 onPressed: _isPublishing ? null : _createProductWithImage,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
+                  backgroundColor: primaryYellow,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
                 child: _isPublishing
@@ -483,7 +479,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         children: [
                           CircularProgressIndicator(color: Colors.white),
                           SizedBox(width: 10),
-                          Text("Publication...", style: TextStyle(color: Colors.white)),
+                          Text("Publication...",
+                              style: TextStyle(color: Colors.white)),
                         ],
                       )
                     : const Text(

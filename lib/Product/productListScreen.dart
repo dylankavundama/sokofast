@@ -8,6 +8,8 @@ import 'package:soko/Screen/ProfileScreen.dart';
 import 'package:soko/style.dart';
 
 class ProductListScreen extends StatefulWidget {
+  const ProductListScreen({super.key});
+
   @override
   _ProductListScreenState createState() => _ProductListScreenState();
 }

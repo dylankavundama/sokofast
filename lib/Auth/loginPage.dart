@@ -7,6 +7,8 @@ import 'package:soko/style.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }

@@ -320,7 +320,6 @@ class _CartScreenState extends State<CartScreen> {
     double? latitude, // 💡 PARAMÈTRE MIS À JOUR
     double? longitude, // 💡 PARAMÈTRE MIS À JOUR
   }) async {
- 
     final url = '$baseUrl/commande.php';
 
     try {
@@ -722,7 +721,7 @@ class _CartScreenState extends State<CartScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Frais de service (15%):',
+                          const Text('Frais de livraison (15%):',
                               style:
                                   TextStyle(fontSize: 16, color: Colors.red)),
                           Text('+ ${surcharge.toStringAsFixed(2)} \$',
@@ -768,9 +767,9 @@ class _CartScreenState extends State<CartScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton.icon(
-                          icon: const Icon(Icons.phone_android,
+                          icon: const Icon(Icons.mobile_friendly,
                               color: Colors.white),
-                          label: const Text('Mobile Money (FlexPay)',
+                          label: const Text('Mobile Money',
                               style: TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,

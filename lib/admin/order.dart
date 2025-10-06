@@ -374,18 +374,7 @@ class _OrdersPageState extends State<OrdersPage> {
                               //  const Divider(),
                               // Assurez-vous que les coordonnées existent et sont valides avant d'afficher le bouton
                               // Affichage et modification du statut
-                              Padding(
-                                padding: const EdgeInsets.only(top: 8.0),
-                                child: GestureDetector(
-                                    onTap: () {
-                                      // Appel avec l'objet de la commande
-                                    },
-                                    child: Text('Contacter le client',
-                                        style: TextStyle(
-                                            color: primaryYellow,
-                                            //      decoration: TextDecoration.underline,
-                                            fontWeight: FontWeight.bold))),
-                              ),
+                   
 
                               Row(
                                   mainAxisAlignment:
@@ -403,12 +392,15 @@ class _OrdersPageState extends State<OrdersPage> {
                                     ),
                                     Text(order.address),
                                     ElevatedButton.icon(
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: primaryYellow,
+                                      ) ,
                                       onPressed: () {
                                         _launchWhatsAppClient(order);
                                       },
                                       icon: const Icon(Icons.call,
-                                          color: Colors.white),
-                                      label: const Text('WhatsApp Client',
+                                          color: Colors.green),
+                                      label: const Text('Chat',
                                           style:
                                               TextStyle(color: Colors.white)),
                                     ),

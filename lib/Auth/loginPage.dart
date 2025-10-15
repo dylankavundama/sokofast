@@ -273,7 +273,7 @@ class _LoginPageState extends State<LoginPage> {
                       if (_isLoading)
                         Column(
                           children: [
-                            const CircularProgressIndicator(),
+                        //    const CircularProgressIndicator(),
                             const SizedBox(height: 16),
                             Text(
                               'Connexion automatique...',

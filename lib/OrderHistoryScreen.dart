@@ -27,7 +27,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   /// Initialise les données en s'assurant que l'utilisateur est connecté et récupère ensuite les commandes.
-  Future<void>  _initializeAndFetchOrders() async {
+  Future<void> _initializeAndFetchOrders() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -190,7 +190,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           final formattedDate = DateFormat('dd/MM/yyyy à HH:mm').format(date);
 
                           final totalPriceFromBackend = double.tryParse(order['total_price'].toString()) ?? 0.0;
-                          final displayedOrderTotal = totalPriceFromBackend;
+                          // --- MODIFICATION POUR AJOUTER 30% AU PRIX TOTAL ---
+                          final percentageIncrease = 0.30;
+                          final displayedOrderTotal = totalPriceFromBackend * (1 + percentageIncrease);
+                          // -----------------------------------------------------
                           final status = order['status']?.toString() ?? 'Inconnu';
 
                           return Card(
@@ -242,6 +245,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                             final productName = product['product_name'] ?? 'Produit inconnu';
                                             final quantity = product['quantity'] ?? 0;
                                             final totalForProductLine = (product['total_price'] as num?)?.toDouble() ?? 0.0;
+                                            
+                                            // L'augmentation de 30% ne s'applique QU'AU total de la commande
+                                            // On garde ici le prix unitaire et le total de la ligne sans l'augmentation pour les détails.
                                             final unitPrice = quantity > 0 ? totalForProductLine / quantity : 0.0;
 
                                             return Padding(
@@ -283,7 +289,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           const Text(
-                                            'Total de la commande:',
+                                            'Total de la commande (30% incl. ):',
                                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                           ),
                                           Text(

@@ -101,7 +101,7 @@ class _OrdersPageState extends State<OrdersPage> {
         queryParams['status'] = _selectedStatusFilter;
       }
 
-      final uri = Uri.parse('${ApiConfig.BASE_URL}/api_order.php').replace(
+      final uri = Uri.parse('https://babutik.com/soko/api_order.php').replace(
           queryParameters:
               queryParams.map((k, v) => MapEntry(k, v.toString())));
 

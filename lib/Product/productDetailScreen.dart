@@ -43,6 +43,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     super.dispose();
   }
 
+  // NOUVELLE FONCTION: Calculer le prix avec une majoration de 30%
+  double _calculatePriceWithMarkup(dynamic priceValue) {
+    // Tente d'analyser la valeur comme un double, sinon utilise 0.0
+    final double originalPrice = double.tryParse(priceValue?.toString() ?? '') ?? 0.0;
+    // Ajoute 30%
+    return originalPrice * 1.30;
+  }
+  
+  // Reste des méthodes inchangées...
+  
   Future<void> _loadCartLocally() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String>? encodedItems = prefs.getStringList('cartItems');
@@ -80,6 +90,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     }
 
     // Si connecté, ajouter au panier
+    // IMPORTANT : On ajoute l'objet produit original, mais l'écran CartScreen 
+    // devra lui aussi appliquer la majoration de 30% pour l'affichage des prix.
     setState(() {
       cartItems.add({
         'product': widget.product,
@@ -152,7 +164,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   void showOrderDialog(BuildContext context) {
     final product = widget.product;
-    final price = double.tryParse(product['price']?.toString() ?? '') ?? 0.0;
+    // Utiliser le prix majoré pour le dialogue
+    final price = _calculatePriceWithMarkup(product['price']); 
     final total = price * _quantity;
 
     showDialog(
@@ -181,6 +194,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
+                  // Afficher le prix majoré
                   'Produit: ${product['name']}\nQuantité: $_quantity\nTotal: ${total.toStringAsFixed(2)} \$',
                   style: const TextStyle(fontSize: 16),
                 ),
@@ -216,7 +230,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       address: addressController.text,
                       quantity: _quantity,
                       product: product,
-                      total: total,
+                      total: total, // Utilise le total majoré
                     );
                   },
                 ),
@@ -233,7 +247,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   ),
                   onPressed: () {
                     Navigator.pop(context);
-                    _showMobileMoneyOptions(context, total);
+                    _showMobileMoneyOptions(context, total); // Utilise le total majoré
                   },
                 ),
               ],
@@ -251,13 +265,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     required dynamic product,
     required double total,
   }) async {
+    // Utiliser le prix majoré pour le message WhatsApp
+    final priceWithMarkup = _calculatePriceWithMarkup(product['price']);
+    
     final message = """
 Bonjour, je m'appelle $name.
 
 Je voudrais commander :
 ${product['name']}
 Quantité: $quantity
-Prix: ${product['price']} \$
+Prix unitaire majoré: ${priceWithMarkup.toStringAsFixed(2)} \$
 
 Total: ${total.toStringAsFixed(2)} \$
 
@@ -277,7 +294,8 @@ Address: $address
             {
               'id': product['id'],
               'name': product['name'],
-              'price': double.parse(product['price'].toString()),
+              // IMPORTANT: Enregistrer le prix majoré dans l'historique
+              'price': priceWithMarkup, 
               'quantity': quantity,
             }
           ],
@@ -324,11 +342,7 @@ Address: $address
     orders.add(jsonEncode(newOrder.toJson()));
     await prefs.setStringList('orders', orders);
 
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-      content: Text(''),
-    )
-        // Text("Commande enregistrée dans l'historique")),
-        );
+    // Supprimé le SnackBar vide/inutile ici
   }
 
   final commentController = TextEditingController();
@@ -337,12 +351,13 @@ Address: $address
     final name = nameController.text.trim();
     final address = addressController.text.trim();
 
-    // ✅ Vérification AVANT d'ouvrir la boîte de dialogue
-    if (nameController.text.isEmpty || addressController.text.isEmpty) {
+    // Vérification: Si nom/adresse sont vides, on affiche le premier dialogue
+    if (name.isEmpty || address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Veuillez remplir le nom et l'adresse")),
       );
-      return showOrderDialog(context);
+      // On ne fait rien de plus, l'utilisateur devra ré-appeler la fonction depuis le dialogue
+      return; 
     }
 
     String selectedMethod = '';
@@ -433,18 +448,20 @@ Address: $address
                             );
                             return;
                           }
+                          
+                          // Utiliser le prix majoré pour l'enregistrement
+                          final priceWithMarkup = _calculatePriceWithMarkup(widget.product['price']);
 
                           await _saveOrderToHistory(
                             products: [
                               {
                                 'id': widget.product['id'],
                                 'name': widget.product['name'],
-                                'price': double.parse(
-                                    widget.product['price'].toString()),
+                                'price': priceWithMarkup, // Prix majoré
                                 'quantity': _quantity,
                               }
                             ],
-                            total: totalPrice,
+                            total: totalPrice, // Total majoré passé en argument
                             address: address,
                             paymentMethod: selectedMethod,
                           );
@@ -455,7 +472,7 @@ Address: $address
                             transactionId: transactionId,
                             quantity: _quantity,
                             productName: widget.product['name'],
-                            totalPrice: totalPrice,
+                            totalPrice: totalPrice, // Total majoré passé en argument
                             paymentMethod: selectedMethod,
                           );
 
@@ -484,14 +501,12 @@ Address: $address
   @override
   Widget build(BuildContext context) {
     final product = widget.product;
-    final price = double.tryParse(product['price']?.toString() ?? '') ?? 0.0;
+    // Utiliser le prix majoré pour l'affichage
+    final price = _calculatePriceWithMarkup(product['price']); 
     final total = price * _quantity;
     final images = product['images'] as List? ?? [];
 
     return Scaffold(
-// Ajoutez cette méthode dans votre classe _ProductDetailScreenState
-
-// Et remplacez votre floatingActionButton par ceci :
       floatingActionButton: Stack(
         children: [
           FloatingActionButton(
@@ -528,22 +543,11 @@ Address: $address
             ),
         ],
       ),
-
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
             backgroundColor: backdColor,
-            // title: Text(
-            //   'soko',
-            //   style: GoogleFonts.abel(
-            //     fontSize: 18,
-            //     color: Colors.white,
-            //     fontWeight: FontWeight.bold,
-            //   ),
-            // ),
-
             expandedHeight: MediaQuery.of(context).size.height * 0.5,
-
             pinned: true,
             flexibleSpace: FlexibleSpaceBar(
               background: images.isNotEmpty
@@ -612,8 +616,9 @@ Address: $address
                           ),
                         ),
                         const SizedBox(height: 4),
+                        // Affichage du prix majoré
                         Text(
-                          '${price.toStringAsFixed(2)} \$',
+                          '${price.toStringAsFixed(2)} \$', 
                           style: GoogleFonts.actor(
                             color: Theme.of(context).primaryColor,
                             fontWeight: FontWeight.bold,
@@ -698,6 +703,7 @@ Address: $address
                                         setState(() => _quantity++),
                                   ),
                                   const Spacer(),
+                                  // Affichage du total basé sur le prix majoré
                                   Text(
                                     'Total: ${total.toStringAsFixed(2)} \$',
                                     style: const TextStyle(
@@ -708,8 +714,8 @@ Address: $address
                                 ],
                               ),
                               const SizedBox(height: 24),
-//
                               // Boutons d'action
+                                    // Boutons d'action
                               Row(
                                 children: [
                                   Expanded(
@@ -738,7 +744,6 @@ Address: $address
                         // Onglet Commentaires
                         CommentSection(
                           productId: widget.product['id'],
-                          //  compactMode: true, // Mode compact pour l'intégration dans le TabBar
                         ),
                       ],
                     ),

@@ -202,7 +202,7 @@ class _CartScreenState extends State<CartScreen> {
       longitude = coords['longitude'];
     }
 
-    // --- 💡 CORRECTION : CALCUL DU MONTANT TOTAL AVEC 15% SUPPLÉMENTAIRE ---
+    // --- 💡 CORRECTION : CALCUL DU MONTANT TOTAL AVEC 30% SUPPLÉMENTAIRE ---
     // 1. Calcul du montant total des produits (Base)
     final double baseAmount = cartItems.fold(
       0.0,
@@ -212,8 +212,8 @@ class _CartScreenState extends State<CartScreen> {
               item['quantity']),
     );
 
-    // 2. Calcul du supplément (15% de la base)
-    final double surcharge = baseAmount * 0.15; // 15%
+    // 2. Calcul du supplément (30% de la base)
+    final double surcharge = baseAmount * 0.30; // 30%
 
     // 3. Montant final à facturer
     final double totalAmount = baseAmount + surcharge;
@@ -226,7 +226,7 @@ class _CartScreenState extends State<CartScreen> {
     }
 
     final String referenceId = _generateFlexPayReference();
-    // Utilisation du montant final avec 15% pour la passerelle FlexPay
+    // Utilisation du montant final avec 30% pour la passerelle FlexPay
     final String amountString = totalAmount.toStringAsFixed(0);
 
     // 1. Préparation du corps de la requête FlexPay
@@ -235,7 +235,7 @@ class _CartScreenState extends State<CartScreen> {
       "type": "1", // Mobile Money
       "phone": clientPhoneNumber,
       "reference": referenceId,
-      // Le montant inclut maintenant les 15%
+      // Le montant inclut maintenant les 30%
       "amount": amountString,
       "currency": "USD",
       "callbackUrl": _CALLBACK_URL,
@@ -269,7 +269,7 @@ class _CartScreenState extends State<CartScreen> {
             address: address,
             transactionId: referenceId,
             products: cartItems,
-            // Utilise le montant total avec 15%
+            // Utilise le montant total avec 30%
             totalPrice: totalAmount,
             paymentMethod: "FlexPay :$clientPhoneNumber",
             status: 'PENDING',
@@ -314,7 +314,7 @@ class _CartScreenState extends State<CartScreen> {
     required String transactionId,
     required List<Map<String, dynamic>> products,
     required double
-        totalPrice, // Montant TOTAL avec 15% pour l'enregistrement local
+        totalPrice, // Montant TOTAL avec 30% pour l'enregistrement local
     required String paymentMethod,
     String status = 'en cours', // Statut par défaut
     double? latitude, // 💡 PARAMÈTRE MIS À JOUR
@@ -328,7 +328,7 @@ class _CartScreenState extends State<CartScreen> {
             double.tryParse(product['product']['price'].toString()) ?? 0.0;
         final int productQuantity = (product['quantity'] as num).toInt();
 
-        // 💡 CORRECTION: Calculer le prix de BASE de la ligne de produit SANS les 15%
+        // 💡 CORRECTION: Calculer le prix de BASE de la ligne de produit SANS les 30%
         final double calculatedIndividualProductBasePrice =
             productPrice * productQuantity;
 
@@ -359,7 +359,7 @@ class _CartScreenState extends State<CartScreen> {
         }
       }
 
-      // Le `orderData` local stocke le `totalPrice` avec les 15% pour l'affichage dans l'historique
+      // Le `orderData` local stocke le `totalPrice` avec les 30% pour l'affichage dans l'historique
       final orderData = {
         'id': transactionId,
         'date': DateTime.now().toIso8601String(),
@@ -367,7 +367,7 @@ class _CartScreenState extends State<CartScreen> {
         'address': address,
         'products': products,
         'totalPrice':
-            totalPrice, // C'est ici que le total avec 15% est conservé
+            totalPrice, // C'est ici que le total avec 30% est conservé
         'paymentMethod': paymentMethod,
         'status': status,
         'latitude': latitude,
@@ -405,101 +405,113 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  void _orderViaWhatsApp(BuildContext context) async {
-    final address = addressController.text;
+  // Définition de la constante pour le pourcentage, rend le code plus lisible
+  double _SERVICE_FEE_RATE = 0.30; // 30% de supplément (frais de service/livraison)
 
-    // 1. Calcul du montant total de BASE (sans frais)
-    final double baseAmount = cartItems.fold(
-      0.0,
-      (sum, item) =>
-          sum +
-          ((double.tryParse(item['product']['price'].toString()) ?? 0) *
-              item['quantity']),
-    );
+ void _orderViaWhatsApp(BuildContext context) async {
+  final address = addressController.text;
 
-    // 2. Calcul du supplément (15% de la base)
-    final double surcharge = baseAmount * 0.15; // 15%
+  // 1. Calcul du montant total de BASE (prix des produits uniquement)
+  const double _SERVICE_FEE_RATE = 0.30; // Réutilisation de la constante
+  final double baseAmount = cartItems.fold(
+    0.0,
+    (sum, item) =>
+        sum +
+        ((double.tryParse(item['product']['price'].toString()) ?? 0) *
+            item['quantity']),
+  );
 
-    // 3. Montant final à facturer au client
-    final double total = baseAmount + surcharge;
-    // La variable `total` contient maintenant le prix des produits + 15%
+  // 2. Calcul du supplément (30% de la base)
+  final double surcharge = baseAmount * _SERVICE_FEE_RATE;
 
-    // 💡 LOGIQUE DE PRIORITÉ DE LOCALISATION (Inchangée)
-    double? latitude;
-    double? longitude;
+  // 3. Montant final à facturer au client
+  final double total = baseAmount + surcharge;
 
-    if (_currentPosition != null) {
-      // Priorité 1: Position GPS en direct
-      latitude = _currentPosition!.latitude;
-      longitude = _currentPosition!.longitude;
-    } else {
-      // Priorité 2: Fallback au géocodage de l'adresse
-      final coords = await _geocodeAddress(address);
-      if (coords == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Adresse de livraison introuvable. Veuillez activer le GPS ou affiner l\'adresse.')),
-        );
-        return;
-      }
-      latitude = coords['latitude'];
-      longitude = coords['longitude'];
-    }
+  // 💡 LOGIQUE DE PRIORITÉ DE LOCALISATION (Inchangée)
+  double? latitude;
+  double? longitude;
 
-    // Construction du message WhatsApp
-    final buffer = StringBuffer();
-    buffer.write('Bonjour, je souhaite passer une commande :');
-    for (var item in cartItems) {
-      final price = double.tryParse(item['product']['price'].toString()) ?? 0.0;
-      final quantity = item['quantity'];
-      buffer.write(
-          '\n- ${item['product']['name']} x$quantity (${(price * quantity).toStringAsFixed(2)} \$)');
-    }
-
-    // Ajout de la ligne des frais de service dans le message WhatsApp
-    buffer.write(
-        '\n\nFrais de livraison (15%): ${surcharge.toStringAsFixed(2)} \$');
-    // Le total affiché inclut maintenant les 15%
-    buffer.write('\nTotal final : ${total.toStringAsFixed(2)} \$');
-
-    buffer.write('\nAdresse de livraison : $address');
-    buffer.write('\nMon contact: ${phoneController.text.trim()}');
-
-    // Assurez-vous que ce numéro est celui de l'administrateur/livreur
-    const phone = '243992959898';
-    final url = Uri.parse(
-        'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
-
-    try {
-      final orderResult = await sendOrderToDatabase(
-        context: context,
-        name: loggedInUserName!,
-        address: address,
-        transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
-        products: cartItems,
-        // 💡 ENVOI du total final (avec 15%) pour l'enregistrement local
-        totalPrice: total,
-        paymentMethod: 'WhatsApp',
-        status: 'en cours',
-        latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES
-        longitude: longitude,
+  if (_currentPosition != null) {
+    // Priorité 1: Position GPS en direct
+    latitude = _currentPosition!.latitude;
+    longitude = _currentPosition!.longitude;
+  } else {
+    // Priorité 2: Fallback au géocodage de l'adresse
+    final coords = await _geocodeAddress(address);
+    if (coords == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'Adresse de livraison introuvable. Veuillez activer le GPS ou affiner l\'adresse.')),
       );
-
-      if (orderResult != null) {
-        if (await canLaunchUrl(url)) {
-          await launchUrl(url, mode: LaunchMode.externalApplication);
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Impossible d'ouvrir WhatsApp")),
-          );
-        }
-      }
-    } catch (e) {
-      print('Error during WhatsApp order process: $e');
+      return;
     }
+    latitude = coords['latitude'];
+    longitude = coords['longitude'];
   }
 
+  // Construction du message WhatsApp
+  final buffer = StringBuffer();
+  buffer.write('Bonjour, je souhaite passer une commande :');
+  
+  // Détail des produits
+  for (var item in cartItems) {
+    final price = double.tryParse(item['product']['price'].toString()) ?? 0.0;
+    final quantity = item['quantity'];
+    buffer.write(
+        '\n- ${item['product']['name']}  : $quantity pièce(s) dont ${(price * 1.30).toStringAsFixed(2)} \$ la pièce'); // Prix avec 30%
+  }
+  
+  buffer.write('\n\nSous-total (produits) : ${baseAmount.toStringAsFixed(2)} \$');
+  buffer.write('\nFrais de service (30%) : ${surcharge.toStringAsFixed(2)} \$');
+  buffer.write('\nTotal final à payer : ${total.toStringAsFixed(2)} \$'); // Total incluant les 30%
+
+  buffer.write('\n\nAdresse de livraison : $address');
+  buffer.write('\nMon contact: ${phoneController.text.trim()}');
+
+  // 🚀 AJOUT DES COORDONNÉES GPS AU MESSAGE WHATSAPP
+  if (latitude != null && longitude != null) {
+    buffer.write('\nCoordonnées GPS: $latitude, $longitude');
+    // Facultatif : Ajout d'un lien Google Maps pour un accès facile
+    buffer.write('\nLien Carte: https://maps.google.com/?q=$latitude,$longitude');
+  } else {
+    buffer.write('\nCoordonnées GPS: Non disponibles (adresse texte utilisée)');
+  }
+  // --------------------------------------------------------------------
+
+  // Assurez-vous que ce numéro est celui de l'administrateur/livreur
+  const phone = '243992959898';
+  final url = Uri.parse(
+      'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
+
+  try {
+    final orderResult = await sendOrderToDatabase(
+      context: context,
+      name: loggedInUserName!,
+      address: address,
+      transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
+      products: cartItems,
+      // ENVOI du total final (avec 30%) pour l'enregistrement local
+      totalPrice: total,
+      paymentMethod: 'WhatsApp',
+      status: 'en cours',
+      latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
+      longitude: longitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
+    );
+
+    if (orderResult != null) {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Impossible d'ouvrir WhatsApp")),
+        );
+      }
+    }
+  } catch (e) {
+    print('Error during WhatsApp order process: $e');
+  }
+}
   // ------------------------------------------------------------------
   // MISE À JOUR DE LA BOÎTE DE DIALOGUE
   // ------------------------------------------------------------------
@@ -536,7 +548,7 @@ class _CartScreenState extends State<CartScreen> {
                       onPressed: _getCurrentLocation,
                       icon: const Icon(Icons.refresh),
                       label: const Text('Réessayer la localisation GPS')),
-                const SizedBox(height: 15),
+                const SizedBox(height: 30),
 
                 // Champ Adresse
                 TextField(
@@ -547,7 +559,7 @@ class _CartScreenState extends State<CartScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 30),
                 // Champ Téléphone
                 TextField(
                   controller: phoneController,
@@ -596,6 +608,7 @@ class _CartScreenState extends State<CartScreen> {
       },
     );
   }
+// Si vous voulez aussi afficher le prix unitaire ajusté (13.00 $ x 1 = 13.00 $)
 
   @override
   Widget build(BuildContext context) {
@@ -617,8 +630,8 @@ class _CartScreenState extends State<CartScreen> {
       },
     );
 
-// 2. Calculer le supplément (15% de la base)
-    final double surcharge = baseAmount * 0.15; // 15%
+// 2. Calculer le supplément (30% de la base)
+    final double surcharge = baseAmount * 0.30; // 30%
 
 // 3. Montant final (Total)
     final double tottalAmount = baseAmount + surcharge;
@@ -668,7 +681,9 @@ class _CartScreenState extends State<CartScreen> {
                             style: GoogleFonts.abel(),
                           ),
                           subtitle: Text(
-                            '${price.toStringAsFixed(2)} \$ x $quantity = ${(price * quantity).toStringAsFixed(2)} \$',
+                            // Calcule le prix unitaire ajusté: price * 1.30
+                            // Multiplie par la quantité pour obtenir le nouveau sous-total.
+                            '${(price * quantity * 1.30).toStringAsFixed(2)} \$ x $quantity ',
                           ),
                           trailing: IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
@@ -707,26 +722,38 @@ class _CartScreenState extends State<CartScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // 1. Ligne du Sous-total
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Sous-total:',
-                              style: TextStyle(fontSize: 16)),
-                          Text('${baseAmount.toStringAsFixed(2)} \$',
-                              style: const TextStyle(fontSize: 16)),
-                        ],
-                      ),
+                      // Row(
+                      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //   children: [
+                      //     const Text('Sous-total:',
+                      //         style: TextStyle(fontSize: 16)),
+                      //     Text('${baseAmount.toStringAsFixed(2)} \$',
+                      //         style: const TextStyle(fontSize: 16)),
+                      //   ],
+                      // ),
 
-                      // 2. Ligne des Frais de service (15%)
+                      // 2. Ligne des Frais de service (30%)
+                      // Row(
+                      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      //   children: [
+                      //     const Text('Frais de livraison & service:',
+                      //         style:
+                      //             TextStyle(fontSize: 16, color: Colors.red)),
+                      //     Text('+ ${surcharge.toStringAsFixed(2)} \$',
+                      //         style: const TextStyle(
+                      //             fontSize: 16, color: Colors.red)),
+                      //   ],
+                      // ),
+
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Text('Frais de livraison (15%):',
-                              style:
-                                  TextStyle(fontSize: 16, color: Colors.red)),
-                          Text('+ ${surcharge.toStringAsFixed(2)} \$',
-                              style: const TextStyle(
-                                  fontSize: 16, color: Colors.red)),
+                          const Text(
+                            'Tout frais inclus',
+                            style: TextStyle(fontSize: 16, color: Colors.red),
+                          ),
+                        
                         ],
                       ),
 
@@ -740,7 +767,7 @@ class _CartScreenState extends State<CartScreen> {
                               style: TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                           Text(
-                              '${tottalAmount.toStringAsFixed(2)}+ \$', // Montant avec les 15%
+                              '${tottalAmount.toStringAsFixed(2)}+ \$', // Montant avec les 30%
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                         ],

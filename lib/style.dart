@@ -1,19 +1,4 @@
 import 'package:flutter/material.dart';
-// class loading extends StatelessWidget {
-//   const loading({
-//     super.key,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       body: Center(
-//         child: Image.asset('assets/ld.gif'),
-//       ),
-//     );
-//   }
-// }
 
 // ignore: camel_case_types
 class loading extends StatelessWidget {

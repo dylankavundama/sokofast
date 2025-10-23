@@ -3,7 +3,7 @@ description: Application des ventes en ligne.
 # description: A new Flutter project.
 publish_to: "none"
 
-version: 2.2.0+24
+version: 2.2.0+25
 
 environment:
   sdk: ">=3.5.0 <4.2.0"
@@ -15,6 +15,7 @@ dependencies:
 
    # flutter_slidable: any
   http: ^0.13.3
+  shimmer: ^3.0.0 # Ajoutez ou mettez à jour cette ligne
   cached_network_image: ^3.2.0
   shared_preferences: ^2.0.8
   # flutter_secure_storage: ^5.0.2

@@ -88,7 +88,6 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
       _error = '';
     });
-
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       if (googleUser == null) {
@@ -126,7 +125,8 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         throw Exception("Utilisateur null après connexion");
       }
-    } on FirebaseAuthException catch (e) {
+    }
+    on FirebaseAuthException catch (e) {
       setState(() {
         _isLoading = false;
         if (e.code == 'account-exists-with-different-credential') {
@@ -151,6 +151,56 @@ class _LoginPageState extends State<LoginPage> {
       });
       print('Erreur de connexion Google: $e');
     }
+  }
+
+  Future<void> googleLogin() async {
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+      final GoogleSignInAuthentication googleAuth =
+      await googleUser!.authentication;
+
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      String? idToken;
+      bool isInPhoneAttachment =
+          FirebaseAuth.instance.currentUser?.isAnonymous == true;
+      if (isInPhoneAttachment) {
+        idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      }
+
+      if (idToken != null) {
+        try {
+          final res = await FirebaseAuth.instance.currentUser
+              ?.linkWithCredential(credential);
+        } on FirebaseAuthException catch (e) {
+          setState(() {
+            _isLoading = false;
+            if (e.code == 'account-exists-with-different-credential') {
+              _error = 'Un compte existe déjà avec cet email.';
+            } else if (e.code == 'invalid-credential') {
+              _error = 'Identifiants invalides. Veuillez réessayer.';
+            } else if (e.code == 'user-disabled') {
+              _error = 'Ce compte a été désactivé.';
+            } else if (e.code == 'user-not-found') {
+              _error = 'Aucun compte trouvé avec cet email.';
+            } else if (e.code == 'wrong-password') {
+              _error = 'Mot de passe incorrect.';
+            } else {
+              _error = 'Échec de la connexion. Veuillez réessayer.';
+            }
+          });
+          print('Erreur Firebase Auth: $e');
+        } catch (e) {
+          setState(() {
+            _isLoading = false;
+            _error = 'Échec de la connexion Google. Veuillez réessayer.';
+          });
+          print('Erreur de connexion Google: $e');
+        }
+      }
   }
 
   // ✅ VÉRIFICATION AUTOMATIQUE DE CONNEXION AU DÉMARRAGE

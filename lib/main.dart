@@ -5,9 +5,13 @@ import 'package:soko/Screen/splashScreen.dart';
 import 'package:soko/onBoarding.dart';
 import 'package:soko/style.dart';
 
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // Vérifie si l’onboarding a déjà été vu
   SharedPreferences prefs = await SharedPreferences.getInstance();

@@ -35,6 +35,8 @@ dependencies:
   geolocator: ^11.0.1
   geocoding :
   permission_handler: ^11.0.1
+  sign_in_with_apple: ^6.1.0
+  crypto: ^3.0.3
 dev_dependencies:
   flutter_test:
     sdk: flutter

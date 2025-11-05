@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
+import 'dart:io' show Platform;
 import 'package:soko/Screen/bottonNav.dart';
-import 'package:soko/style.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
 
 class LoginPage extends StatefulWidget {
@@ -18,6 +22,22 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String _error = '';
   bool _isLoading = false;
+
+  // REMPLACEZ-LES PAR VOS VALEURS (Android/Web uniquement)
+  static const String _appleServiceId = 'com.sokofast.btc';
+  static const String _appleRedirectUri = 'https://apple.com/callbacks/sign_in_with_apple';
+
+  String _generateNonce([int length = 32]) {
+    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
 
   // ✅ SAUVEGARDER LES DONNÉES UTILISATEUR DANS SHARED_PREFERENCES
   Future<void> _saveUserData(User user) async {
@@ -150,6 +170,166 @@ class _LoginPageState extends State<LoginPage> {
         _error = 'Échec de la connexion Google. Veuillez réessayer.';
       });
       print('Erreur de connexion Google: $e');
+    }
+  }
+
+  Future<void> signInWithApple() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
+    try {
+      // Vérifier si Apple Sign-In est disponible
+      final isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        setState(() {
+          _isLoading = false;
+          _error = 'Connexion Apple non disponible sur cet appareil.';
+        });
+        print('❌ Apple Sign-In non disponible');
+        return;
+      }
+
+      print('🍎 Démarrage de la connexion Apple...');
+      final rawNonce = _generateNonce();
+      final nonce = _sha256ofString(rawNonce);
+      print('🔑 Nonce généré: ${rawNonce.substring(0, 8)}...');
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
+        // Requis sur Android/Web: fournir clientId (Service ID) et redirectUri
+        webAuthenticationOptions: Platform.isIOS
+            ? null
+            : WebAuthenticationOptions(
+                clientId: _appleServiceId,
+                redirectUri: Uri.parse(_appleRedirectUri),
+              ),
+      );
+
+      print('✅ Credentials Apple obtenues');
+      print('📧 Email: ${appleCredential.email ?? 'non fourni'}');
+      print('👤 Nom: ${appleCredential.givenName ?? 'non fourni'} ${appleCredential.familyName ?? ''}');
+      print('🆔 Identity Token: ${appleCredential.identityToken != null && appleCredential.identityToken!.isNotEmpty ? 'présent' : 'absent'}');
+      print('🔐 Authorization Code: ${appleCredential.authorizationCode.isNotEmpty ? 'présent' : 'absent'}');
+
+      if (appleCredential.identityToken == null) {
+        throw Exception('Identity token manquant');
+      }
+
+      final oauthProvider = OAuthProvider("apple.com");
+      final credential = oauthProvider.credential(
+        idToken: appleCredential.identityToken,
+        accessToken: appleCredential.authorizationCode,
+        rawNonce: rawNonce,
+      );
+
+      print('🔥 Authentification Firebase en cours...');
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user != null) {
+        // Gérer les informations de nom si fournies lors de la première connexion
+        if (appleCredential.givenName != null || appleCredential.familyName != null) {
+          final displayName = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
+          if (displayName.isNotEmpty && user.displayName == null) {
+            await user.updateDisplayName(displayName);
+            await user.reload();
+            final updatedUser = _auth.currentUser;
+            if (updatedUser != null) {
+              await _saveUserData(updatedUser);
+            }
+          } else {
+            await _saveUserData(user);
+          }
+        } else {
+          await _saveUserData(user);
+        }
+
+        print("🎉 Connexion Apple réussie: ${user.email ?? 'Email masqué'}");
+        
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => BottomNavExample()),
+          );
+        }
+      } else {
+        throw Exception('Utilisateur null après connexion Apple');
+      }
+    } on SignInWithAppleAuthorizationException catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      switch (e.code) {
+        case AuthorizationErrorCode.canceled:
+          print('❌ Connexion Apple annulée par l\'utilisateur');
+          // Ne pas afficher d'erreur si l'utilisateur a annulé
+          return;
+        case AuthorizationErrorCode.failed:
+          _error = 'Échec de l\'autorisation Apple.';
+          print('❌ Erreur d\'autorisation Apple: ${e.message}');
+          break;
+        case AuthorizationErrorCode.invalidResponse:
+          _error = 'Réponse invalide d\'Apple.';
+          print('❌ Réponse invalide: ${e.message}');
+          break;
+        case AuthorizationErrorCode.notHandled:
+          _error = 'Connexion Apple non gérée.';
+          print('❌ Non géré: ${e.message}');
+          break;
+        case AuthorizationErrorCode.notInteractive:
+          _error = 'Connexion Apple non interactive.';
+          print('❌ Non interactif: ${e.message}');
+          break;
+        case AuthorizationErrorCode.unknown:
+          _error = 'Erreur inconnue lors de la connexion Apple.';
+          print('❌ Erreur inconnue: ${e.message}');
+          break;
+      }
+      
+      setState(() {
+        _error = _error;
+      });
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      
+      print('❌ Erreur Firebase Auth: ${e.code} - ${e.message}');
+      
+      switch (e.code) {
+        case 'invalid-credential':
+          _error = 'Identifiants Apple invalides. Veuillez réessayer.';
+          break;
+        case 'account-exists-with-different-credential':
+          _error = 'Un compte existe déjà avec cet email (utilisez un autre moyen de connexion).';
+          break;
+        case 'operation-not-allowed':
+          _error = 'Connexion Apple non activée dans Firebase.';
+          break;
+        case 'network-request-failed':
+          _error = 'Erreur réseau. Vérifiez votre connexion.';
+          break;
+        default:
+          _error = 'Échec de la connexion Apple: ${e.message ?? e.code}';
+      }
+      
+      setState(() {
+        _error = _error;
+      });
+    } catch (e, stackTrace) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Erreur lors de la connexion Apple: ${e.toString()}';
+      });
+      print('❌ Erreur inattendue Apple Sign-In: $e');
+      print('Stack trace: $stackTrace');
     }
   }
 
@@ -316,6 +496,42 @@ class _LoginPageState extends State<LoginPage> {
                                 )
                               : Text(
                                   'Se connecter avec Google',
+                                  style: GoogleFonts.aBeeZee(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Bouton de connexion Apple
+                      Text('OU', style: GoogleFonts.abel(fontSize: 14, color: Colors.grey)),
+                      const SizedBox(height: 12),   
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : signInWithApple,
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          icon: const Icon(Icons.apple, color: Colors.white),
+                          label: _isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  'Se connecter avec Apple',
                                   style: GoogleFonts.aBeeZee(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,

@@ -10,4 +10,6 @@ class ApiConfig {
   static const String BASE_URL = 'https://babutik.com/soko';
 }
 
+
+
 // Assurez-vous d'importer ApiConfig là où il est utilisé.

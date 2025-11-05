@@ -462,18 +462,19 @@ class _CartScreenState extends State<CartScreen> {
         '\n- ${item['product']['name']}  : $quantity pièce(s) dont ${(price * 1.30).toStringAsFixed(2)} \$ la pièce'); // Prix avec 30%
   }
   
-  buffer.write('\n\nSous-total (produits) : ${baseAmount.toStringAsFixed(2)} \$');
-  buffer.write('\nFrais de service (30%) : ${surcharge.toStringAsFixed(2)} \$');
+  // buffer.write('\n\nSous-total (produits) : ${baseAmount.toStringAsFixed(2)} \$');
+  // buffer.write('\nFrais de service (30%) : ${surcharge.toStringAsFixed(2)} \$');
   buffer.write('\nTotal final à payer : ${total.toStringAsFixed(2)} \$'); // Total incluant les 30%
 
   buffer.write('\n\nAdresse de livraison : $address');
-  buffer.write('\nMon contact: ${phoneController.text.trim()}');
+  
+  buffer.write('\n\nMon contact: ${phoneController.text.trim()}');
 
   // 🚀 AJOUT DES COORDONNÉES GPS AU MESSAGE WHATSAPP
   if (latitude != null && longitude != null) {
-    buffer.write('\nCoordonnées GPS: $latitude, $longitude');
+    // buffer.write('\nCoordonnées GPS: $latitude, $longitude');
     // Facultatif : Ajout d'un lien Google Maps pour un accès facile
-    buffer.write('\nLien Carte: https://maps.google.com/?q=$latitude,$longitude');
+    buffer.write('\n\nLien Carte: https://maps.google.com/?q=$latitude,$longitude');
   } else {
     buffer.write('\nCoordonnées GPS: Non disponibles (adresse texte utilisée)');
   }

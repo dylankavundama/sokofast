@@ -262,22 +262,23 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                                   Expanded(
                                                     flex: 2,
                                                     child: Text(
-                                                      '$quantity x ${unitPrice.toStringAsFixed(2)} \$',
+                                                      // '$quantity x ${unitPrice.toStringAsFixed(2)} \$',
+                                                                        '$quantity x',
                                                       textAlign: TextAlign.center,
                                                       style: const TextStyle(fontSize: 14),
                                                     ),
                                                   ),
-                                                  Expanded(
-                                                    flex: 2,
-                                                    child: Text(
-                                                      '${totalForProductLine.toStringAsFixed(2)} \$',
-                                                      textAlign: TextAlign.end,
-                                                      style: const TextStyle(
-                                                        fontSize: 14,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                  ),
+                                                  // Expanded(
+                                                  //   flex: 2,
+                                                  //   child: Text(
+                                                  //     '${totalForProductLine.toStringAsFixed(2)} \$',
+                                                  //     textAlign: TextAlign.end,
+                                                  //     style: const TextStyle(
+                                                  //       fontSize: 14,
+                                                  //       fontWeight: FontWeight.bold,
+                                                  //     ),
+                                                  //   ),
+                                                  // ),
                                                 ],
                                               ),
                                             );
@@ -289,7 +290,8 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           const Text(
-                                            'Total de la commande (30% incl. ):',
+                                            // 'Total de la commande (30% incl. ):',
+                                                    'Total de la commande',
                                             style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                           ),
                                           Text(

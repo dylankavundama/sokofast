@@ -69,6 +69,14 @@
             {
               "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "100681275497-fi93iqp19ckkmhovnmvsn8uo5hbgh88r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sokofast.btc",
+                "app_store_id": "6753981596"
+              }
             }
           ]
         }
@@ -138,6 +146,14 @@
             {
               "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "100681275497-fi93iqp19ckkmhovnmvsn8uo5hbgh88r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sokofast.btc",
+                "app_store_id": "6753981596"
+              }
             }
           ]
         }
@@ -167,6 +183,59 @@
             {
               "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "100681275497-fi93iqp19ckkmhovnmvsn8uo5hbgh88r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sokofast.btc",
+                "app_store_id": "6753981596"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:100681275497:android:9f7eacb6162cbcabfb2af8",
+        "android_client_info": {
+          "package_name": "com.melissa.io"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "100681275497-pc6c6r61qnugkshc0dc72d9au26ukqdc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.melissa.io",
+            "certificate_hash": "4854bcb85e894e6e6fb0870189da818b8aca63bd"
+          }
+        },
+        {
+          "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC5heGH0Rni-DuGuyjvMSinZ7IKIy_Jcns"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "100681275497-fi93iqp19ckkmhovnmvsn8uo5hbgh88r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sokofast.btc",
+                "app_store_id": "6753981596"
+              }
             }
           ]
         }
@@ -189,6 +258,22 @@
           }
         },
         {
+          "client_id": "100681275497-e9gb7919gjqls6a3mjvb4488r34n1sfd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sokofast.btc",
+            "certificate_hash": "4854bcb85e894e6e6fb0870189da818b8aca63bd"
+          }
+        },
+        {
+          "client_id": "100681275497-jem8ujonr7eicedpdttgfrh1h29gjv9n.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.sokofast.btc",
+            "certificate_hash": "ca6da23df7be86c445ec90c7e5eb6d262abaa1a7"
+          }
+        },
+        {
           "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -204,6 +289,14 @@
             {
               "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "100681275497-fi93iqp19ckkmhovnmvsn8uo5hbgh88r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sokofast.btc",
+                "app_store_id": "6753981596"
+              }
             }
           ]
         }
@@ -257,6 +350,14 @@
             {
               "client_id": "100681275497-jup1e832en0sam7in9pturjj8pglnug2.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "100681275497-fi93iqp19ckkmhovnmvsn8uo5hbgh88r.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.sokofast.btc",
+                "app_store_id": "6753981596"
+              }
             }
           ]
         }

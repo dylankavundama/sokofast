@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
@@ -182,28 +183,12 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> signInWithApple() async {
-    setState(() {
-      _isLoading = true;
-      _error = '';
-    });
-
+  Future<bool> signInWithApple() async {
     try {
-      // Vérifier si Apple Sign-In est disponible
-      final isAvailable = await SignInWithApple.isAvailable();
-      if (!isAvailable) {
-        setState(() {
-          _isLoading = false;
-          _error = 'Connexion Apple non disponible sur cet appareil.';
-        });
-        print('❌ Apple Sign-In non disponible');
-        return;
-      }
+      setState(() { _isLoading = true; _error = ''; });
 
-      print('🍎 Démarrage de la connexion Apple...');
       final rawNonce = _generateNonce();
       final nonce = _sha256ofString(rawNonce);
-      print('🔑 Nonce généré: ${rawNonce.substring(0, 8)}...');
 
       final appleCredential = await SignInWithApple.getAppleIDCredential(
         scopes: [
@@ -211,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
           AppleIDAuthorizationScopes.fullName,
         ],
         nonce: nonce,
-        // Requis sur Android/Web: fournir clientId (Service ID) et redirectUri
+        // iOS: natif, Android: flux Web avec Service ID + Redirect URI
         webAuthenticationOptions: Platform.isIOS
             ? null
             : WebAuthenticationOptions(
@@ -220,125 +205,79 @@ class _LoginPageState extends State<LoginPage> {
               ),
       );
 
-      print('✅ Credentials Apple obtenues');
-      print('📧 Email: ${appleCredential.email ?? 'non fourni'}');
-      print('👤 Nom: ${appleCredential.givenName ?? 'non fourni'} ${appleCredential.familyName ?? ''}');
-      print('🆔 Identity Token: ${appleCredential.identityToken != null && appleCredential.identityToken!.isNotEmpty ? 'présent' : 'absent'}');
-      print('🔐 Authorization Code: ${appleCredential.authorizationCode.isNotEmpty ? 'présent' : 'absent'}');
-
-      if (appleCredential.identityToken == null) {
-        throw Exception('Identity token manquant');
-      }
-
-      final oauthProvider = OAuthProvider("apple.com");
-      final credential = oauthProvider.credential(
+      final oauthCredential = OAuthProvider("apple.com").credential(
         idToken: appleCredential.identityToken,
-        accessToken: appleCredential.authorizationCode,
         rawNonce: rawNonce,
+        accessToken: appleCredential.authorizationCode,
       );
 
-      print('🔥 Authentification Firebase en cours...');
-      final userCredential = await _auth.signInWithCredential(credential);
-      final user = userCredential.user;
+      String? idToken;
+      final isInPhoneAttachment = FirebaseAuth.instance.currentUser?.isAnonymous == true;
+      if (isInPhoneAttachment) {
+        idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      }
 
+      if (idToken != null) {
+        try {
+          await FirebaseAuth.instance.currentUser?.linkWithCredential(oauthCredential);
+        } on FirebaseAuthException catch (e) {
+          switch (e.code) {
+            case "provider-already-linked":
+              await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+              break;
+            case "credential-already-in-use":
+              if (e.credential != null) {
+                await FirebaseAuth.instance.signInWithCredential(e.credential!);
+              }
+              break;
+            case "email-already-in-use":
+              // Signale via UI existante
+              setState(() { _error = 'Email déjà utilisé.'; });
+              return false;
+            default:
+              rethrow;
+          }
+        }
+      } else {
+        await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      }
+
+      final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Gérer les informations de nom si fournies lors de la première connexion
-        if (appleCredential.givenName != null || appleCredential.familyName != null) {
+        // Enregistrer nom si retourné à la première connexion
+        if ((appleCredential.givenName != null || appleCredential.familyName != null) && (user.displayName == null || user.displayName!.isEmpty)) {
           final displayName = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
-          if (displayName.isNotEmpty && user.displayName == null) {
+          if (displayName.isNotEmpty) {
             await user.updateDisplayName(displayName);
             await user.reload();
-            final updatedUser = _auth.currentUser;
-            if (updatedUser != null) {
-              await _saveUserData(updatedUser);
-            }
-          } else {
-            await _saveUserData(user);
           }
-        } else {
-          await _saveUserData(user);
         }
 
-        print("🎉 Connexion Apple réussie: ${user.email ?? 'Email masqué'}");
-        
+        await _saveUserData(FirebaseAuth.instance.currentUser!);
+
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) => BottomNavExample()),
           );
         }
-      } else {
-        throw Exception('Utilisateur null après connexion Apple');
       }
-    } on SignInWithAppleAuthorizationException catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      
-      switch (e.code) {
-        case AuthorizationErrorCode.canceled:
-          print('❌ Connexion Apple annulée par l\'utilisateur');
-          // Ne pas afficher d'erreur si l'utilisateur a annulé
-          return;
-        case AuthorizationErrorCode.failed:
-          _error = 'Échec de l\'autorisation Apple.';
-          print('❌ Erreur d\'autorisation Apple: ${e.message}');
-          break;
-        case AuthorizationErrorCode.invalidResponse:
-          _error = 'Réponse invalide d\'Apple.';
-          print('❌ Réponse invalide: ${e.message}');
-          break;
-        case AuthorizationErrorCode.notHandled:
-          _error = 'Connexion Apple non gérée.';
-          print('❌ Non géré: ${e.message}');
-          break;
-        case AuthorizationErrorCode.notInteractive:
-          _error = 'Connexion Apple non interactive.';
-          print('❌ Non interactif: ${e.message}');
-          break;
-        case AuthorizationErrorCode.unknown:
-          _error = 'Erreur inconnue lors de la connexion Apple.';
-          print('❌ Erreur inconnue: ${e.message}');
-          break;
-      }
-      
-      setState(() {
-        _error = _error;
-      });
+
+      setState(() { _isLoading = false; });
+      return true;
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      
-      print('❌ Erreur Firebase Auth: ${e.code} - ${e.message}');
-      
-      switch (e.code) {
-        case 'invalid-credential':
-          _error = 'Identifiants Apple invalides. Veuillez réessayer.';
-          break;
-        case 'account-exists-with-different-credential':
-          _error = 'Un compte existe déjà avec cet email (utilisez un autre moyen de connexion).';
-          break;
-        case 'operation-not-allowed':
-          _error = 'Connexion Apple non activée dans Firebase.';
-          break;
-        case 'network-request-failed':
-          _error = 'Erreur réseau. Vérifiez votre connexion.';
-          break;
-        default:
-          _error = 'Échec de la connexion Apple: ${e.message ?? e.code}';
+      setState(() { _isLoading = false; _error = e.message ?? 'Erreur Firebase'; });
+      return false;
+    } on PlatformException catch (e) {
+      setState(() { _isLoading = false; _error = e.message ?? 'Erreur plate-forme'; });
+      return false;
+    } catch (e) {
+      if (e is SignInWithAppleAuthorizationException && e.code == AuthorizationErrorCode.canceled) {
+        setState(() { _isLoading = false; });
+        return false;
       }
-      
-      setState(() {
-        _error = _error;
-      });
-    } catch (e, stackTrace) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Erreur lors de la connexion Apple: ${e.toString()}';
-      });
-      print('❌ Erreur inattendue Apple Sign-In: $e');
-      print('Stack trace: $stackTrace');
+      setState(() { _isLoading = false; _error = e.toString(); });
+      return false;
     }
   }
 
@@ -513,9 +452,9 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       ),
                       const SizedBox(height: 12),
-                      // Bouton de connexion Apple
+                      // Bouton de connexion Apple (iOS natif, Android via Web)
                       Text('OU', style: GoogleFonts.abel(fontSize: 14, color: Colors.grey)),
-                      const SizedBox(height: 12),   
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(

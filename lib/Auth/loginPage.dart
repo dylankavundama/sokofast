@@ -414,7 +414,44 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       
+                      // Sur iOS, Apple Sign-In doit être en premier (directive 4.8)
+                      // Bouton de connexion Apple (prioritaire sur iOS)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isLoading ? null : signInWithApple,
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            backgroundColor: Colors.black,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 2,
+                          ),
+                          icon: const Icon(Icons.apple, color: Colors.white),
+                          label: _isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(
+                                  'Se connecter avec Apple',
+                                  style: GoogleFonts.aBeeZee(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
                       // Bouton de connexion Google
+                      Text('OU', style: GoogleFonts.abel(fontSize: 14, color: Colors.grey)),
+                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -444,42 +481,6 @@ class _LoginPageState extends State<LoginPage> {
                                 )
                               : Text(
                                   'Se connecter avec Google',
-                                  style: GoogleFonts.aBeeZee(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Bouton de connexion Apple (iOS natif, Android via Web)
-                      Text('OU', style: GoogleFonts.abel(fontSize: 14, color: Colors.grey)),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : signInWithApple,
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                          icon: const Icon(Icons.apple, color: Colors.white),
-                          label: _isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  'Se connecter avec Apple',
                                   style: GoogleFonts.aBeeZee(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,

@@ -1,14 +1,15 @@
+import 'dart:convert';
+import 'dart:io' show Platform;
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
-import 'dart:convert';
-import 'dart:math';
-import 'package:crypto/crypto.dart';
-import 'dart:io' show Platform;
-import 'package:soko/Screen/bottonNav.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+import 'package:soko/Screen/bottonNav.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -23,9 +24,17 @@ class _LoginPageState extends State<LoginPage> {
   String _error = '';
   bool _isLoading = false;
 
-  // REMPLACEZ-LES PAR VOS VALEURS (Android/Web uniquement)
-  static const String _appleServiceId = 'com.sokofast.btc';
-  static const String _appleRedirectUri = 'https://apple.com/callbacks/sign_in_with_apple';
+  // ⚠️ CONFIGURATION APPLE SIGN-IN (Android/Web uniquement)
+  // 
+  // 1. Créez un Service ID dans Apple Developer :
+  //    - https://developer.apple.com/account → Certificates, Identifiers & Profiles → Identifiers
+  //    - Créez un "Services IDs" (ex: com.sokofast.btc.signin)
+  //    - Activez "Sign In with Apple" pour ce Service ID
+  //    - Configurez le Return URL : https://sokofast.vercel.app/callbacks/sign_in_with_apple
+  //
+  // 2. Utilisez le Service ID créé ci-dessous (PAS le Bundle ID iOS)
+  static const String _appleServiceId = 'com.sokofast.btc'; // ← REMPLACEZ par votre Service ID
+  static const String _appleRedirectUri = 'https://sokofast.vercel.app/callbacks/sign_in_with_apple';
 
   String _generateNonce([int length = 32]) {
     const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';

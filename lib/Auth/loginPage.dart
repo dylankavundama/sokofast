@@ -1,16 +1,24 @@
-import 'dart:convert';
-import 'dart:io' show Platform;
+import 'dart:io';
 import 'dart:math';
 
-import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
-import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+// import 'package:soko/style.dart'; // Supposé être un fichier de style local
+import 'package:shared_preferences/shared_preferences.dart';
+// NOUVEAUX IMPORTS POUR APPLE
+import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
 import 'package:soko/Screen/bottonNav.dart';
+
+// Utilitaires de sécurité pour Apple Sign-In
+String generateNonce({int length = 32}) {
+  const charset =
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+  final random = Random.secure();
+  return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+      .join();
+}
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -25,29 +33,7 @@ class _LoginPageState extends State<LoginPage> {
   String _error = '';
   bool _isLoading = false;
 
-  // ⚠️ CONFIGURATION APPLE SIGN-IN (Android/Web uniquement)
-  // 
-  // 1. Créez un Service ID dans Apple Developer :
-  //    - https://developer.apple.com/account → Certificates, Identifiers & Profiles → Identifiers
-  //    - Créez un "Services IDs" (ex: com.sokofast.btc.signin)
-  //    - Activez "Sign In with Apple" pour ce Service ID
-  //    - Configurez le Return URL : https://sokofast.vercel.app/callbacks/sign_in_with_apple
-  //
-  // 2. Utilisez le Service ID créé ci-dessous (PAS le Bundle ID iOS)
-  static const String _appleServiceId = 'com.sokofast.btc'; // ← REMPLACEZ par votre Service ID
-  static const String _appleRedirectUri = 'https://sokofast.vercel.app/callbacks/sign_in_with_apple';
-
-  String _generateNonce([int length = 32]) {
-    const charset = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
-    final random = Random.secure();
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
-  }
-
-  String _sha256ofString(String input) {
-    final bytes = utf8.encode(input);
-    final digest = sha256.convert(bytes);
-    return digest.toString();
-  }
+  // --- START: Méthodes de Gestion de Session (Corrigent l'erreur) ---
 
   // ✅ SAUVEGARDER LES DONNÉES UTILISATEUR DANS SHARED_PREFERENCES
   Future<void> _saveUserData(User user) async {
@@ -65,7 +51,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ✅ VÉRIFIER SI UN UTILISATEUR EST DÉJÀ CONNECTÉ
+  // 🔎 VÉRIFIER SI UN UTILISATEUR EST DÉJÀ CONNECTÉ
   Future<bool> _checkExistingUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -76,7 +62,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ✅ RÉCUPÉRER LES DONNÉES UTILISATEUR
+  // ✅ RÉCUPÉRER LES DONNÉES UTILISATEUR (Méthode statique inchangée)
   static Future<Map<String, String>> getUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -92,7 +78,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  // ✅ DÉCONNEXION ET SUPPRESSION DES DONNÉES
+  // ✅ DÉCONNEXION ET SUPPRESSION DES DONNÉES (Méthode statique inchangée)
   static Future<void> logoutUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -112,7 +98,48 @@ class _LoginPageState extends State<LoginPage> {
       print("❌ Erreur déconnexion: $e");
     }
   }
+  
+  // --- END: Méthodes de Gestion de Session ---
 
+  // ✅ UTILITAIRE: NAVIGUER VERS L'ÉCRAN PRINCIPAL
+  void _navigateToHome() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => BottomNavExample()),
+      );
+    }
+  }
+  
+  // ✅ UTILITAIRE: GÉRER LES ERREURS FIREBASE
+  void _handleAuthError(FirebaseAuthException e) {
+    setState(() {
+      _isLoading = false;
+      if (e.code == 'account-exists-with-different-credential') {
+        _error = 'Un compte existe déjà avec cet email.';
+      } else if (e.code == 'invalid-credential') {
+        _error = 'Identifiants invalides. Veuillez réessayer.';
+      } else if (e.code == 'user-disabled') {
+        _error = 'Ce compte a été désactivé.';
+      } else if (e.code == 'user-not-found') {
+        _error = 'Aucun compte trouvé avec cet email.';
+      } else if (e.code == 'wrong-password') {
+        _error = 'Mot de passe incorrect.';
+      } else {
+        _error = 'Échec de la connexion. Veuillez réessayer.';
+      }
+    });
+  }
+
+  // ✅ UTILITAIRE: GÉRER LES ERREURS GÉNÉRIQUES
+  void _handleGenericError(dynamic e, String defaultMessage) {
+    setState(() {
+      _isLoading = false;
+      _error = defaultMessage;
+    });
+  }
+
+  // 1. FONCTION DE CONNEXION GOOGLE
   Future<void> signInWithGoogle() async {
     setState(() {
       _isLoading = true;
@@ -135,153 +162,87 @@ class _LoginPageState extends State<LoginPage> {
         idToken: googleAuth.idToken,
       );
 
-      // Connexion à Firebase
       final UserCredential userCredential = 
           await _auth.signInWithCredential(credential);
       final User? user = userCredential.user;
 
       if (user != null) {
-        // Sauvegarder les données utilisateur
         await _saveUserData(user);
-        
-        print("🎉 Connexion réussie: ${user.email}");
-        
-        // Navigation vers l'écran principal
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => BottomNavExample()),
-          );
-        }
+        print("🎉 Connexion Google réussie: ${user.email}");
+        _navigateToHome();
       } else {
-        throw Exception("Utilisateur null après connexion");
+        throw Exception("Utilisateur null après connexion Google");
       }
     } on FirebaseAuthException catch (e) {
-      setState(() {
-        _isLoading = false;
-        if (e.code == 'account-exists-with-different-credential') {
-          _error = 'Un compte existe déjà avec cet email.';
-        } else if (e.code == 'invalid-credential') {
-          _error = 'Identifiants invalides. Veuillez réessayer.';
-        } else if (e.code == 'user-disabled') {
-          _error = 'Ce compte a été désactivé.';
-        } else if (e.code == 'user-not-found') {
-          _error = 'Aucun compte trouvé avec cet email.';
-        } else if (e.code == 'wrong-password') {
-          _error = 'Mot de passe incorrect.';
-        } else {
-          _error = 'Échec de la connexion. Veuillez réessayer.';
-        }
-      });
-      print('Erreur Firebase Auth: $e');
+      _handleAuthError(e);
+      print('Erreur Firebase Auth (Google): $e');
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = 'Échec de la connexion Google. Veuillez réessayer.';
-      });
+      _handleGenericError(e, 'Échec de la connexion Google. Veuillez réessayer.');
       print('Erreur de connexion Google: $e');
     }
   }
 
-  Future<bool> signInWithApple() async {
+  // 2. FONCTION DE CONNEXION APPLE
+  Future<void> signInWithApple() async {
+    setState(() {
+      _isLoading = true;
+      _error = '';
+    });
+
     try {
-      setState(() { _isLoading = true; _error = ''; });
-
-      final rawNonce = _generateNonce();
-      final nonce = _sha256ofString(rawNonce);
-
-      final appleCredential = await SignInWithApple.getAppleIDCredential(
+      final rawNonce = generateNonce();
+      
+      final appleCredential = await apple.SignInWithApple.getAppleIDCredential(
         scopes: [
-          AppleIDAuthorizationScopes.email,
-          AppleIDAuthorizationScopes.fullName,
+          apple.AppleIDAuthorizationScopes.email,
+          apple.AppleIDAuthorizationScopes.fullName,
         ],
-        nonce: nonce,
-        // iOS: natif, Android: flux Web avec Service ID + Redirect URI
-        webAuthenticationOptions: Platform.isIOS
-            ? null
-            : WebAuthenticationOptions(
-                clientId: _appleServiceId,
-                redirectUri: Uri.parse(_appleRedirectUri),
-              ),
+        nonce: rawNonce,
       );
 
-      final oauthCredential = OAuthProvider("apple.com").credential(
+      final AuthCredential credential = OAuthProvider('apple.com').credential(
         idToken: appleCredential.identityToken,
         rawNonce: rawNonce,
-        accessToken: appleCredential.authorizationCode,
       );
 
-      String? idToken;
-      final isInPhoneAttachment = FirebaseAuth.instance.currentUser?.isAnonymous == true;
-      if (isInPhoneAttachment) {
-        idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
-      }
+      final UserCredential userCredential = 
+          await _auth.signInWithCredential(credential);
+      final User? user = userCredential.user;
 
-      if (idToken != null) {
-        try {
-          await FirebaseAuth.instance.currentUser?.linkWithCredential(oauthCredential);
-        } on FirebaseAuthException catch (e) {
-          switch (e.code) {
-            case "provider-already-linked":
-              await FirebaseAuth.instance.signInWithCredential(oauthCredential);
-              break;
-            case "credential-already-in-use":
-              if (e.credential != null) {
-                await FirebaseAuth.instance.signInWithCredential(e.credential!);
-              }
-              break;
-            case "email-already-in-use":
-              // Signale via UI existante
-              setState(() { _error = 'Email déjà utilisé.'; });
-              return false;
-            default:
-              rethrow;
-          }
-        }
-      } else {
-        await FirebaseAuth.instance.signInWithCredential(oauthCredential);
-      }
-
-      final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        // Enregistrer nom si retourné à la première connexion
-        if ((appleCredential.givenName != null || appleCredential.familyName != null) && (user.displayName == null || user.displayName!.isEmpty)) {
-          final displayName = '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}'.trim();
-          if (displayName.isNotEmpty) {
-            await user.updateDisplayName(displayName);
-            await user.reload();
-          }
+        // Optionnel: Mettre à jour le nom si c'est la première fois
+        if (user.displayName == null && appleCredential.givenName != null) {
+            await user.updateDisplayName(
+                '${appleCredential.givenName ?? ''} ${appleCredential.familyName ?? ''}');
         }
-
-        await _saveUserData(FirebaseAuth.instance.currentUser!);
-
-        if (mounted) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => BottomNavExample()),
-          );
-        }
+        
+        await _saveUserData(user);
+        print("🎉 Connexion Apple réussie: ${user.email}");
+        _navigateToHome();
+      } else {
+        throw Exception("Utilisateur null après connexion Apple");
       }
-
-      setState(() { _isLoading = false; });
-      return true;
     } on FirebaseAuthException catch (e) {
-      setState(() { _isLoading = false; _error = e.message ?? 'Erreur Firebase'; });
-      return false;
-    } on PlatformException catch (e) {
-      setState(() { _isLoading = false; _error = e.message ?? 'Erreur plate-forme'; });
-      return false;
-    } catch (e) {
-      if (e is SignInWithAppleAuthorizationException && e.code == AuthorizationErrorCode.canceled) {
-        setState(() { _isLoading = false; });
-        return false;
+      _handleAuthError(e);
+      print('Erreur Firebase Auth (Apple): $e');
+    } on apple.SignInWithAppleAuthorizationException catch (e) {
+      // Gérer l'annulation par l'utilisateur
+      if (e.code == apple.AuthorizationErrorCode.canceled) {
+        print("Connexion Apple annulée par l'utilisateur.");
+        setState(() {
+          _isLoading = false;
+        });
+      } else {
+        _handleGenericError(e, 'Échec de la connexion Apple.');
       }
-      setState(() { _isLoading = false; _error = e.toString(); });
-      return false;
+    } catch (e) {
+      _handleGenericError(e, 'Échec de la connexion Apple. Veuillez réessayer.');
+      print('Erreur de connexion Apple: $e');
     }
   }
 
-  // ✅ VÉRIFICATION AUTOMATIQUE DE CONNEXION AU DÉMARRAGE
+
+  // 3. VÉRIFICATION AUTOMATIQUE DE CONNEXION AU DÉMARRAGE
   @override
   void initState() {
     super.initState();
@@ -291,11 +252,9 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _checkAndAutoLogin() async {
     final isLoggedIn = await _checkExistingUser();
     if (isLoggedIn && mounted) {
-      // Vérifier si l'utilisateur Firebase est toujours connecté
       final currentUser = _auth.currentUser;
       if (currentUser != null) {
         print("🔄 Connexion automatique pour: ${currentUser.email}");
-        // Navigation automatique après un court délai
         Future.delayed(const Duration(milliseconds: 500), () {
           if (mounted) {
             Navigator.pushReplacement(
@@ -305,17 +264,17 @@ class _LoginPageState extends State<LoginPage> {
           }
         });
       } else {
-        // L'utilisateur n'est plus connecté à Firebase, nettoyer les données
         await logoutUser();
       }
     }
   }
 
+  // 4. WIDGET BUILD
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
               Colors.white,
@@ -397,14 +356,13 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       
-                      // Indicateur de chargement pour connexion auto
+                      // Indicateur de chargement
                       if (_isLoading)
                         Column(
                           children: [
-                        //    const CircularProgressIndicator(),
                             const SizedBox(height: 16),
                             Text(
-                              'Connexion automatique...',
+                              'Connexion en cours...',
                               style: GoogleFonts.abel(
                                 fontSize: 16,
                                 color: Colors.blue.shade700,
@@ -414,44 +372,7 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       
-                      // Sur iOS, Apple Sign-In doit être en premier (directive 4.8)
-                      // Bouton de connexion Apple (prioritaire sur iOS)
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : signInWithApple,
-                          style: ElevatedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            backgroundColor: Colors.black,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 2,
-                          ),
-                          icon: const Icon(Icons.apple, color: Colors.white),
-                          label: _isLoading
-                              ? const SizedBox(
-                                  height: 24,
-                                  width: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : Text(
-                                  'Se connecter avec Apple',
-                                  style: GoogleFonts.aBeeZee(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
                       // Bouton de connexion Google
-                      Text('OU', style: GoogleFonts.abel(fontSize: 14, color: Colors.grey)),
-                      const SizedBox(height: 12),
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -488,7 +409,28 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                         ),
                       ),
-                      
+
+                      // Bouton de connexion Apple (Visible uniquement sur iOS/macOS)
+                      // if (Platform.isIOS || Platform.isMacOS)
+                        Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: apple.SignInWithAppleButton(
+                                onPressed: _isLoading ? null : signInWithApple,
+                                style: apple.SignInWithAppleButtonStyle.black,
+                                height: 56,
+                                borderRadius: BorderRadius.circular(12),
+                                iconAlignment: _isLoading 
+                                  ? apple.IconAlignment.center 
+                                  : apple.IconAlignment.left,
+                                text: _isLoading ? 'Connexion…' : 'Se connecter avec Apple',
+                              ),
+                            ),
+                          ],
+                        ),
+
                       // Information sur la persistance des données
                       const SizedBox(height: 20),
                       Container(

@@ -82,7 +82,7 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _saveCartLocally() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> encodedItems =
-        cartItems.map((item) => jsonEncode(item)).toList();
+    cartItems.map((item) => jsonEncode(item)).toList();
     await prefs.setStringList('cartItems', encodedItems);
   }
 
@@ -206,8 +206,8 @@ class _CartScreenState extends State<CartScreen> {
     // 1. Calcul du montant total des produits (Base)
     final double baseAmount = cartItems.fold(
       0.0,
-      (sum, item) =>
-          sum +
+          (sum, item) =>
+      sum +
           ((double.tryParse(item['product']['price'].toString()) ?? 0) *
               item['quantity']),
     );
@@ -289,7 +289,7 @@ class _CartScreenState extends State<CartScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
-                Text("Échec de l'initiation du paiement FlexPay: $message"),
+            Text("Échec de l'initiation du paiement FlexPay: $message"),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 6),
           ),
@@ -314,7 +314,7 @@ class _CartScreenState extends State<CartScreen> {
     required String transactionId,
     required List<Map<String, dynamic>> products,
     required double
-        totalPrice, // Montant TOTAL avec 30% pour l'enregistrement local
+    totalPrice, // Montant TOTAL avec 30% pour l'enregistrement local
     required String paymentMethod,
     String status = 'en cours', // Statut par défaut
     double? latitude, // 💡 PARAMÈTRE MIS À JOUR
@@ -367,7 +367,7 @@ class _CartScreenState extends State<CartScreen> {
         'address': address,
         'products': products,
         'totalPrice':
-            totalPrice, // C'est ici que le total avec 30% est conservé
+        totalPrice, // C'est ici que le total avec 30% est conservé
         'paymentMethod': paymentMethod,
         'status': status,
         'latitude': latitude,
@@ -408,110 +408,111 @@ class _CartScreenState extends State<CartScreen> {
   // Définition de la constante pour le pourcentage, rend le code plus lisible
   double _SERVICE_FEE_RATE = 0.30; // 30% de supplément (frais de service/livraison)
 
- void _orderViaWhatsApp(BuildContext context) async {
-  final address = addressController.text;
+  void _orderViaWhatsApp(BuildContext context) async {
+    final address = addressController.text;
 
-  // 1. Calcul du montant total de BASE (prix des produits uniquement)
-  const double _SERVICE_FEE_RATE = 0.30; // Réutilisation de la constante
-  final double baseAmount = cartItems.fold(
-    0.0,
-    (sum, item) =>
-        sum +
-        ((double.tryParse(item['product']['price'].toString()) ?? 0) *
-            item['quantity']),
-  );
-
-  // 2. Calcul du supplément (30% de la base)
-  final double surcharge = baseAmount * _SERVICE_FEE_RATE;
-
-  // 3. Montant final à facturer au client
-  final double total = baseAmount + surcharge;
-
-  // 💡 LOGIQUE DE PRIORITÉ DE LOCALISATION (Inchangée)
-  double? latitude;
-  double? longitude;
-
-  if (_currentPosition != null) {
-    // Priorité 1: Position GPS en direct
-    latitude = _currentPosition!.latitude;
-    longitude = _currentPosition!.longitude;
-  } else {
-    // Priorité 2: Fallback au géocodage de l'adresse
-    final coords = await _geocodeAddress(address);
-    if (coords == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Adresse de livraison introuvable. Veuillez activer le GPS ou affiner l\'adresse.')),
-      );
-      return;
-    }
-    latitude = coords['latitude'];
-    longitude = coords['longitude'];
-  }
-
-  // Construction du message WhatsApp
-  final buffer = StringBuffer();
-  buffer.write('Bonjour, je souhaite passer une commande :');
-  
-  // Détail des produits
-  for (var item in cartItems) {
-    final price = double.tryParse(item['product']['price'].toString()) ?? 0.0;
-    final quantity = item['quantity'];
-    buffer.write(
-        '\n- ${item['product']['name']}  : $quantity pièce(s) dont ${(price * 1.30).toStringAsFixed(2)} \$ la pièce'); // Prix avec 30%
-  }
-  
-  buffer.write('\n\nSous-total (produits) : ${baseAmount.toStringAsFixed(2)} \$');
-  buffer.write('\nFrais de service (30%) : ${surcharge.toStringAsFixed(2)} \$');
-  buffer.write('\nTotal final à payer : ${total.toStringAsFixed(2)} \$'); // Total incluant les 30%
-
-  buffer.write('\n\nAdresse de livraison : $address');
-  buffer.write('\nMon contact: ${phoneController.text.trim()}');
-
-  // 🚀 AJOUT DES COORDONNÉES GPS AU MESSAGE WHATSAPP
-  if (latitude != null && longitude != null) {
-    buffer.write('\nCoordonnées GPS: $latitude, $longitude');
-    // Facultatif : Ajout d'un lien Google Maps pour un accès facile
-    buffer.write('\nLien Carte: https://maps.google.com/?q=$latitude,$longitude');
-  } else {
-    buffer.write('\nCoordonnées GPS: Non disponibles (adresse texte utilisée)');
-  }
-  // --------------------------------------------------------------------
-
-  // Assurez-vous que ce numéro est celui de l'administrateur/livreur
-  const phone = '243992959898';
-  final url = Uri.parse(
-      'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
-
-  try {
-    final orderResult = await sendOrderToDatabase(
-      context: context,
-      name: loggedInUserName!,
-      address: address,
-      transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
-      products: cartItems,
-      // ENVOI du total final (avec 30%) pour l'enregistrement local
-      totalPrice: total,
-      paymentMethod: 'WhatsApp',
-      status: 'en cours',
-      latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
-      longitude: longitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
+    // 1. Calcul du montant total de BASE (prix des produits uniquement)
+    const double _SERVICE_FEE_RATE = 0.30; // Réutilisation de la constante
+    final double baseAmount = cartItems.fold(
+      0.0,
+          (sum, item) =>
+      sum +
+          ((double.tryParse(item['product']['price'].toString()) ?? 0) *
+              item['quantity']),
     );
 
-    if (orderResult != null) {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
+    // 2. Calcul du supplément (30% de la base)
+    final double surcharge = baseAmount * _SERVICE_FEE_RATE;
+
+    // 3. Montant final à facturer au client
+    final double total = baseAmount + surcharge;
+
+    // 💡 LOGIQUE DE PRIORITÉ DE LOCALISATION (Inchangée)
+    double? latitude;
+    double? longitude;
+
+    if (_currentPosition != null) {
+      // Priorité 1: Position GPS en direct
+      latitude = _currentPosition!.latitude;
+      longitude = _currentPosition!.longitude;
+    } else {
+      // Priorité 2: Fallback au géocodage de l'adresse
+      final coords = await _geocodeAddress(address);
+      if (coords == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Impossible d'ouvrir WhatsApp")),
+          const SnackBar(
+              content: Text(
+                  'Adresse de livraison introuvable. Veuillez activer le GPS ou affiner l\'adresse.')),
         );
+        return;
       }
+      latitude = coords['latitude'];
+      longitude = coords['longitude'];
     }
-  } catch (e) {
-    print('Error during WhatsApp order process: $e');
+
+    // Construction du message WhatsApp
+    final buffer = StringBuffer();
+    buffer.write('Bonjour, je souhaite passer une commande :');
+
+    // Détail des produits
+    for (var item in cartItems) {
+      final price = double.tryParse(item['product']['price'].toString()) ?? 0.0;
+      final quantity = item['quantity'];
+      buffer.write(
+          '\n- ${item['product']['name']}  : $quantity pièce(s) dont ${(price * 1.30).toStringAsFixed(2)} \$ la pièce'); // Prix avec 30%
+    }
+
+    // buffer.write('\n\nSous-total (produits) : ${baseAmount.toStringAsFixed(2)} \$');
+    // buffer.write('\nFrais de service (30%) : ${surcharge.toStringAsFixed(2)} \$');
+    buffer.write('\nTotal final à payer : ${total.toStringAsFixed(2)} \$'); // Total incluant les 30%
+
+    buffer.write('\n\nAdresse de livraison : $address');
+
+    buffer.write('\n\nMon contact: ${phoneController.text.trim()}');
+
+    // 🚀 AJOUT DES COORDONNÉES GPS AU MESSAGE WHATSAPP
+    if (latitude != null && longitude != null) {
+      // buffer.write('\nCoordonnées GPS: $latitude, $longitude');
+      // Facultatif : Ajout d'un lien Google Maps pour un accès facile
+      buffer.write('\n\nLien Carte: https://maps.google.com/?q=$latitude,$longitude');
+    } else {
+      buffer.write('\nCoordonnées GPS: Non disponibles (adresse texte utilisée)');
+    }
+    // --------------------------------------------------------------------
+
+    // Assurez-vous que ce numéro est celui de l'administrateur/livreur
+    const phone = '243992959898';
+    final url = Uri.parse(
+        'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
+
+    try {
+      final orderResult = await sendOrderToDatabase(
+        context: context,
+        name: loggedInUserName!,
+        address: address,
+        transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
+        products: cartItems,
+        // ENVOI du total final (avec 30%) pour l'enregistrement local
+        totalPrice: total,
+        paymentMethod: 'WhatsApp',
+        status: 'en cours',
+        latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
+        longitude: longitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
+      );
+
+      if (orderResult != null) {
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Impossible d'ouvrir WhatsApp")),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error during WhatsApp order process: $e');
+    }
   }
-}
   // ------------------------------------------------------------------
   // MISE À JOUR DE LA BOÎTE DE DIALOGUE
   // ------------------------------------------------------------------
@@ -524,8 +525,8 @@ class _CartScreenState extends State<CartScreen> {
     final String locationStatus = _isLocating
         ? 'Recherche de la position GPS...'
         : (_currentPosition != null
-            ? 'Position GPS acquise : ${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}'
-            : 'Position GPS indisponible. Veuillez saisir l\'adresse.');
+        ? 'Position GPS acquise : ${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}'
+        : 'Position GPS indisponible. Veuillez saisir l\'adresse.');
 
     showDialog(
       context: context,
@@ -614,7 +615,7 @@ class _CartScreenState extends State<CartScreen> {
   Widget build(BuildContext context) {
     double totalAmount = cartItems.fold(
       0.0,
-      (double sum, item) {
+          (double sum, item) {
         final price =
             double.tryParse(item['product']['price'].toString()) ?? 0.0;
         return sum + (price * item['quantity']);
@@ -623,7 +624,7 @@ class _CartScreenState extends State<CartScreen> {
 // 1. Calculer le montant de base (Sous-total)
     final double baseAmount = cartItems.fold(
       0.0,
-      (double sum, item) {
+          (double sum, item) {
         final price =
             double.tryParse(item['product']['price'].toString()) ?? 0.0;
         return sum + (price * item['quantity']);
@@ -658,49 +659,49 @@ class _CartScreenState extends State<CartScreen> {
             child: cartItems.isEmpty
                 ? const Center(child: Text('Votre panier est vide'))
                 : ListView(
-                    children: [
-                      ...cartItems.map((item) {
-                        final product = item['product'];
-                        final quantity = item['quantity'];
-                        final price =
-                            double.tryParse(product['price'].toString()) ?? 0;
+              children: [
+                ...cartItems.map((item) {
+                  final product = item['product'];
+                  final quantity = item['quantity'];
+                  final price =
+                      double.tryParse(product['price'].toString()) ?? 0;
 
-                        return ListTile(
-                          leading: product['images'] != null &&
-                                  product['images'].isNotEmpty
-                              ? Image.network(
-                                  product['images'][0]['src'],
-                                  width: 50,
-                                  height: 50,
-                                  fit: BoxFit.cover,
-                                )
-                              : const Icon(Icons.image),
-                          title: Text(
-                            product['name'],
-                            maxLines: 2,
-                            style: GoogleFonts.abel(),
-                          ),
-                          subtitle: Text(
-                            // Calcule le prix unitaire ajusté: price * 1.30
-                            // Multiplie par la quantité pour obtenir le nouveau sous-total.
-                            '${(price * quantity * 1.30).toStringAsFixed(2)} \$ x $quantity ',
-                          ),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () {
-                              setState(() => cartItems.remove(item));
-                              _saveCartLocally();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Produit supprimé du panier')),
-                              );
-                            },
-                          ),
+                  return ListTile(
+                    leading: product['images'] != null &&
+                        product['images'].isNotEmpty
+                        ? Image.network(
+                      product['images'][0]['src'],
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                    )
+                        : const Icon(Icons.image),
+                    title: Text(
+                      product['name'],
+                      maxLines: 2,
+                      style: GoogleFonts.abel(),
+                    ),
+                    subtitle: Text(
+                      // Calcule le prix unitaire ajusté: price * 1.30
+                      // Multiplie par la quantité pour obtenir le nouveau sous-total.
+                      '${(price * quantity * 1.30).toStringAsFixed(2)} \$ x $quantity ',
+                    ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        setState(() => cartItems.remove(item));
+                        _saveCartLocally();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content:
+                              Text('Produit supprimé du panier')),
                         );
-                      }),
-                    ],
-                  ),
+                      },
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
           if (cartItems.isNotEmpty)
             Container(
@@ -753,7 +754,7 @@ class _CartScreenState extends State<CartScreen> {
                             'Tout frais inclus',
                             style: TextStyle(fontSize: 16, color: Colors.red),
                           ),
-                        
+
                         ],
                       ),
 
@@ -788,7 +789,7 @@ class _CartScreenState extends State<CartScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           onPressed: () => _showAddressDialog(
-                              () => _orderViaWhatsApp(context)),
+                                  () => _orderViaWhatsApp(context)),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -803,7 +804,7 @@ class _CartScreenState extends State<CartScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           onPressed: () => _showAddressDialog(
-                              () => _initiateFlexPayTransaction(context)),
+                                  () => _initiateFlexPayTransaction(context)),
                         ),
                       ),
                     ],

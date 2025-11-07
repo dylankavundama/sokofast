@@ -1,7 +1,12 @@
+import 'dart:convert';
+import 'dart:math';
+
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:soko/Screen/bottonNav.dart';
 import 'package:soko/style.dart';
 import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
@@ -18,6 +23,7 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String _error = '';
   bool _isLoading = false;
+  bool _isAppleLoading = false;
 
   // ✅ SAUVEGARDER LES DONNÉES UTILISATEUR DANS SHARED_PREFERENCES
   Future<void> _saveUserData(User user) async {
@@ -153,54 +159,99 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> googleLogin() async {
-    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+  String generateNonce([int length = 32]) {
+    final charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
 
-      final GoogleSignInAuthentication googleAuth =
-      await googleUser!.authentication;
+  String sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    final digest = sha256.convert(bytes);
+    return digest.toString();
+  }
 
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+  Future<void> signInWithApple() async {
+    setState(() {
+      _isAppleLoading = true;
+      _error = '';
+    });
+    try {
+
+      final rawNonce = generateNonce();
+      final nonce = sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: nonce,
       );
 
-      String? idToken;
-      bool isInPhoneAttachment =
-          FirebaseAuth.instance.currentUser?.isAnonymous == true;
-      if (isInPhoneAttachment) {
-        idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
-      }
+      final oauthCredential = OAuthProvider("apple.com").credential(
+        idToken: appleCredential.identityToken,
+        rawNonce: rawNonce,
+        // Line added after the latest firebase_auth update [today it's Jun 4th 2025]
+        accessToken: appleCredential.authorizationCode,
+      );
 
-      if (idToken != null) {
-        try {
-          final res = await FirebaseAuth.instance.currentUser
-              ?.linkWithCredential(credential);
-        } on FirebaseAuthException catch (e) {
-          setState(() {
-            _isLoading = false;
-            if (e.code == 'account-exists-with-different-credential') {
-              _error = 'Un compte existe déjà avec cet email.';
-            } else if (e.code == 'invalid-credential') {
-              _error = 'Identifiants invalides. Veuillez réessayer.';
-            } else if (e.code == 'user-disabled') {
-              _error = 'Ce compte a été désactivé.';
-            } else if (e.code == 'user-not-found') {
-              _error = 'Aucun compte trouvé avec cet email.';
-            } else if (e.code == 'wrong-password') {
-              _error = 'Mot de passe incorrect.';
-            } else {
-              _error = 'Échec de la connexion. Veuillez réessayer.';
-            }
-          });
-          print('Erreur Firebase Auth: $e');
-        } catch (e) {
-          setState(() {
-            _isLoading = false;
-            _error = 'Échec de la connexion Google. Veuillez réessayer.';
-          });
-          print('Erreur de connexion Google: $e');
+      // Connexion à Firebase
+      final UserCredential userCredential = await FirebaseAuth.instance.signInWithCredential(oauthCredential);
+      final User? user = userCredential.user;
+
+      if (user != null) {
+        // Sauvegarder les données utilisateur
+
+        /* N.B: Apple ne fournit les details de l'utilisateur qu'à sa toute première authentification dans  l'appli, pour toutes les prochaines
+        authentifications les details du user sont renvoyés avec des valeurs nulles, il faut trouver un moyen efficace de persist ces details
+        moi même dans Yapp j'avais pas trouvé un excellent moyen de le faire parce que des fois ça renvoyait des valeurs nulles meme apès les avoir
+        persist, raison pour laquelle actuellement on avait decidé au moment où un utilisateur est connecté avec apple j'écris just
+        "Your apple account"
+
+        */
+        await _saveUserData(user);
+
+        print("🎉 Connexion réussie: ${user.email}");
+
+        // Navigation vers l'écran principal
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => BottomNavExample()),
+          );
         }
+      } else {
+        throw Exception("Utilisateur null après connexion");
       }
+    }
+    on FirebaseAuthException catch (e) {
+      setState(() {
+        _isAppleLoading = false;
+        if (e.code == 'account-exists-with-different-credential') {
+          _error = 'Un compte existe déjà avec cet email.';
+        } else if (e.code == 'invalid-credential') {
+          _error = 'Identifiants invalides. Veuillez réessayer.';
+        } else if (e.code == 'user-disabled') {
+          _error = 'Ce compte a été désactivé.';
+        } else if (e.code == 'user-not-found') {
+          _error = 'Aucun compte trouvé avec cet email.';
+        } else if (e.code == 'wrong-password') {
+          _error = 'Mot de passe incorrect.';
+        } else {
+          _error = 'Échec de la connexion. Veuillez réessayer.';
+        }
+      });
+      print('Erreur Firebase Auth: $e');
+    } catch (e) {
+      setState(() {
+        _isAppleLoading = false;
+        _error = 'Échec de la connexion Apple. Veuillez réessayer.';
+      });
+      print('Erreur de connexion Google: $e');
+    }
   }
 
   // ✅ VÉRIFICATION AUTOMATIQUE DE CONNEXION AU DÉMARRAGE
@@ -320,7 +371,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                       
                       // Indicateur de chargement pour connexion auto
-                      if (_isLoading)
+                      if (_isLoading || _isAppleLoading)
                         Column(
                           children: [
                         //    const CircularProgressIndicator(),
@@ -373,9 +424,49 @@ class _LoginPageState extends State<LoginPage> {
                                 ),
                         ),
                       ),
+
+                      const SizedBox(height: 20),
+
+                      //Boutton de connexion avec Apple
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _isAppleLoading ? null : signInWithApple,
+                          style: ElevatedButton.styleFrom(
+                            foregroundColor: Colors.black87,
+                            backgroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: Colors.grey.shade300),
+                            ),
+                            elevation: 2,
+                          ),
+                          icon: Image.asset(
+                            'assets/apple.png',
+                            height: 24,
+                          ),
+                          label: _isAppleLoading
+                              ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.blue,
+                            ),
+                          )
+                              : Text(
+                            'Se connecter avec Apple',
+                            style: GoogleFonts.aBeeZee(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                       
                       // Information sur la persistance des données
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 40),
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(

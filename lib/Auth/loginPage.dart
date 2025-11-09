@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -431,7 +432,7 @@ class _LoginPageState extends State<LoginPage> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
-                          onPressed: _isAppleLoading ? null : signInWithApple,
+                          onPressed: _isAppleLoading ? null : Platform.isIOS ? signInWithApple : (){},
                           style: ElevatedButton.styleFrom(
                             foregroundColor: Colors.black87,
                             backgroundColor: Colors.white,

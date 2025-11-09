@@ -3,7 +3,7 @@ description: Application des ventes en ligne.
 # description: A new Flutter project.
 publish_to: "none"
 
-version: 2.2.0+25
+version: 2.2.0+26
 
 environment:
   sdk: ">=3.5.0 <4.2.0"

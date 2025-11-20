@@ -85,6 +85,13 @@ class _ProductsByCategoryScreenState extends State<ProductsByCategoryScreen> {
                       itemCount: _products.length,
                       itemBuilder: (context, index) {
                         final product = _products[index];
+              final originalPrice = double.tryParse(product['price'].toString()) ?? 0.0;
+
+// 2. Calcule le nouveau prix : prix original * 1.30 (pour +30%)
+final newPrice = originalPrice * 1.30;
+
+// 3. Formate le nouveau prix avec deux décimales.
+final formattedPrice = newPrice.toStringAsFixed(2);
                         return InkWell(
                           onTap: () {
                             Navigator.push(
@@ -127,13 +134,17 @@ class _ProductsByCategoryScreenState extends State<ProductsByCategoryScreen> {
                                         ),
                                       ),
                                       SizedBox(height: 4),
-                                      Text(
-                                        '${product['price']} \$',
-                                        style: TextStyle(
-                                          color: Theme.of(context).primaryColor,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
+                                 // 1. Tente de convertir le prix (qui est une chaîne) en nombre. Utilise 0.0 si la conversion échoue.
+
+
+Text(
+  // Affiche le prix calculé et formaté
+  '$formattedPrice \$',
+  style: TextStyle(
+    color: Theme.of(context).primaryColor,
+    fontWeight: FontWeight.bold,
+  ),
+),
                                     ],
                                   ),
                                 ),

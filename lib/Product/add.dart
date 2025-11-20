@@ -1,9 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soko/Profil/mes_produits.dart';
+import 'package:soko/services/user_service.dart';
 // Importez vos styles si nécessaire
 // import 'package:soko/style.dart'; 
 
@@ -59,6 +63,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   XFile? _selectedImage;
   bool _isPublishing = false;
+  bool _isCheckingStatus = true; // 💡 NOUVEAU : Indicateur de vérification du statut vendeur
 
   List<ProductCategory> _categories = [];
   ProductCategory? _selectedCategory;
@@ -81,6 +86,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _mediaAuthHeaders = {"Authorization": "Basic $mediaAuth"};
 
     _fetchCategories();
+    _checkVendeurStatus(); // 💡 NOUVEAU : Vérifier le statut vendeur
   }
 
   @override
@@ -261,17 +267,40 @@ class _AddProductScreenState extends State<AddProductScreen> {
         final hasImage = product['images'] != null && product['images'].isNotEmpty;
 
         if (mounted) {
+          // 💡 NOUVEAU : S'assurer que l'email est sauvegardé dans SharedPreferences
+          final currentUser = FirebaseAuth.instance.currentUser;
+          if (currentUser != null && currentUser.email != null) {
+            try {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('user_email', currentUser.email!);
+              await prefs.setString('user_name', currentUser.displayName ?? currentUser.email!.split('@')[0]);
+              print("✅ Données utilisateur sauvegardées pour Mes Produits");
+            } catch (e) {
+              print("⚠️ Erreur sauvegarde utilisateur: $e");
+            }
+          }
+          
+          // 💡 NOUVEAU : Afficher un message de succès
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 hasImage ? "✅ Produit créé avec image!" : "✅ Produit créé sans image.",
               ),
               backgroundColor: hasImage ? Colors.green : Colors.blue,
-              duration: const Duration(seconds: 3),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+          
+          // 💡 NOUVEAU : Naviguer vers la page "Mes Produits" et actualiser
+          // On utilise pushReplacement pour remplacer cette page par "Mes Produits"
+          // La page "Mes Produits" se chargera automatiquement dans son initState
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const MyProductsScreen(),
             ),
           );
         }
-        _resetForm();
       } else {
         final error = jsonDecode(response.body);
         print("❌ Erreur création produit: ${error['message']}");
@@ -288,6 +317,34 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
     } finally {
       setState(() => _isPublishing = false);
+    }
+  }
+
+  // =======================================================
+  // 💡 NOUVEAU : Vérifier si l'utilisateur est vendeur
+  // =======================================================
+  Future<void> _checkVendeurStatus() async {
+    setState(() {
+      _isCheckingStatus = true;
+    });
+    
+    final isVendeur = await UserService.isVendeur();
+    if (!isVendeur) {
+      // Si l'utilisateur n'est pas vendeur, rediriger vers le profil
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Seuls les vendeurs peuvent ajouter des produits.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } else {
+      setState(() {
+        _isCheckingStatus = false;
+      });
     }
   }
 
@@ -310,6 +367,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // =======================================================
   @override
   Widget build(BuildContext context) {
+    // 💡 NOUVEAU : Afficher un loader pendant la vérification
+    if (_isCheckingStatus) {
+      return Scaffold(
+        appBar: AppBar(
+          centerTitle: true,
+          title: const Text("Ajouter un produit"),
+        ),
+        body: const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
     // Note: 'primaryYellow' n'étant pas défini, j'utilise une couleur standard.
     final Color primaryYellow = Colors.yellow.shade700; 
     
@@ -325,29 +395,29 @@ class _AddProductScreenState extends State<AddProductScreen> {
           child: ListView(
             children: [
               // ℹ️ Instructions 
-              Card(
-                color: Colors.blue.shade700,
-                child: const Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        "📋 Configuration requise:",
-                        style: TextStyle(
-                            fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
-                      SizedBox(height: 8),
-                      Text("1. Clés WC pour Produits/Catégories.",
-                          style: TextStyle(color: Colors.white)),
-                      Text("2. Mot de passe d'application pour l'Upload d'image (WP API).",
-                          style: TextStyle(color: Colors.white)),
-                    ],
-                  ),
-                ),
-              ),
+              // Card(
+              //   color: Colors.blue.shade700,
+              //   child: const Padding(
+              //     padding: EdgeInsets.all(12),
+              //     child: Column(
+              //       crossAxisAlignment: CrossAxisAlignment.start,
+              //       children: [
+              //         Text(
+              //           "📋 Configuration requise:",
+              //           style: TextStyle(
+              //               fontWeight: FontWeight.bold, color: Colors.white),
+              //         ),
+              //         SizedBox(height: 8),
+              //         Text("1. Clés WC pour Produits/Catégories.",
+              //             style: TextStyle(color: Colors.white)),
+              //         Text("2. Mot de passe d'application pour l'Upload d'image (WP API).",
+              //             style: TextStyle(color: Colors.white)),
+              //       ],
+              //     ),
+              //   ),
+              // ),
 
-              const SizedBox(height: 20),
+              // const SizedBox(height: 20),
 
               // 📝 Champs de saisie
               TextFormField(

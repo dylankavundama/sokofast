@@ -62,6 +62,8 @@
         </array>
       </dict>
     </array>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>We use your location to display localized content and improve the experience.</string>
 
 </dict>
 </plist>

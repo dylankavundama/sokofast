@@ -1,17 +1,19 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:soko/Auth/loginPage.dart';
+import 'package:soko/Product/productCard.dart';
 import 'package:soko/Screen/CartScreen.dart';
 import 'package:soko/Widget/fullImage.dart';
 import 'package:soko/comment.dart';
 import 'package:soko/order.dart';
 import 'package:soko/style.dart';
-import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final dynamic product;
@@ -27,6 +29,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   List<Map<String, dynamic>> cartItems = [];
   late TextEditingController nameController;
   late TextEditingController addressController;
+  
+  // 💡 NOUVEAU : États pour les produits récemment ajoutés
+  List<dynamic> _recentProducts = [];
+  bool _isLoadingRecentProducts = false;
 
   @override
   void initState() {
@@ -34,6 +40,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     nameController = TextEditingController();
     addressController = TextEditingController();
     _loadCartLocally();
+    _fetchRecentProducts(); // Charger les produits récents
   }
 
   @override
@@ -41,6 +48,44 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     nameController.dispose();
     addressController.dispose();
     super.dispose();
+  }
+
+  // 💡 NOUVEAU : Fonction pour récupérer les produits récemment ajoutés
+  Future<void> _fetchRecentProducts() async {
+    setState(() {
+      _isLoadingRecentProducts = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('https://www.babutik.com/wp-json/wc/v3/products?per_page=8&orderby=date&order=desc'),
+        headers: {
+          'Authorization': 'Basic ${base64Encode(utf8.encode('ck_20c9eaf44a30b5028558551525a1b24201ce8293:cs_d2f987d16ac480a59f04a5fefdf563a269667ca3'))}',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        // Exclure le produit actuel de la liste
+        final filteredProducts = data.where((product) => 
+          product['id'] != widget.product['id']
+        ).take(6).toList(); // Limiter à 6 produits
+        
+        setState(() {
+          _recentProducts = filteredProducts;
+          _isLoadingRecentProducts = false;
+        });
+      } else {
+        setState(() {
+          _isLoadingRecentProducts = false;
+        });
+      }
+    } catch (e) {
+      print('Erreur lors du chargement des produits récents: $e');
+      setState(() {
+        _isLoadingRecentProducts = false;
+      });
+    }
   }
 
   // NOUVELLE FONCTION: Calculer le prix avec une majoration de 30%
@@ -715,7 +760,6 @@ Address: $address
                               ),
                               const SizedBox(height: 24),
                               // Boutons d'action
-                                    // Boutons d'action
                               Row(
                                 children: [
                                   Expanded(
@@ -737,6 +781,56 @@ Address: $address
                                   const SizedBox(width: 16),
                                 ],
                               ),
+                              const SizedBox(height: 32),
+                              
+                              // 💡 NOUVEAU : Section produits récemment ajoutés
+                              if (_recentProducts.isNotEmpty || _isLoadingRecentProducts) ...[
+                                const Divider(height: 32),
+                                const Text(
+                                  'Produits récemment ajoutés',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _isLoadingRecentProducts
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.all(24.0),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : GridView.builder(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: 2, // 2 colonnes
+                                          crossAxisSpacing: 12, // Espacement horizontal
+                                          mainAxisSpacing: 16, // Espacement vertical
+                                          childAspectRatio: 0.7, // Ratio largeur/hauteur
+                                        ),
+                                        itemCount: _recentProducts.length,
+                                        itemBuilder: (context, index) {
+                                          final product = _recentProducts[index];
+                                          return GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => ProductDetailScreen(
+                                                    product: product,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: ProductCard(product: product),
+                                          );
+                                        },
+                                      ),
+                                const SizedBox(height: 24),
+                              ],
                             ],
                           ),
                         ),

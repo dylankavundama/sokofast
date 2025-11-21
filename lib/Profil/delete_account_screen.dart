@@ -68,7 +68,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
     final bool? finalConfirm = await showDialog<bool>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text(
           '⚠️ Dernière Confirmation',
           style: TextStyle(color: Colors.red),
@@ -84,7 +84,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Annuler'),
           ),
           ElevatedButton(
@@ -99,21 +99,22 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 _isDeleting = true;
               });
 
-              Navigator.pop(context);
+              Navigator.pop(dialogContext);
 
               try {
                 final result = await DeleteAccountService.deleteAccount(
                   firebaseUid: user.uid,
                   email: user.email ?? '',
-                  context: context,
+                  // context: context,
                 );
-                // if (mounted) {
-                  if (result['success']) {
+
+                if(!mounted) return;
+                  if (result['success'] == true && result['success'] != null) {
                     // Afficher un message de succès
-                    await showDialog(
+                     showDialog(
                       context: context,
                       barrierDismissible: false,
-                      builder: (dialogContext) => AlertDialog(
+                      builder: (context) => AlertDialog(
                         title: const Text(
                           '✅ Compte Supprimé',
                           style: TextStyle(color: Colors.green),
@@ -124,7 +125,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                         actions: [
                           ElevatedButton(
                             onPressed: () {
-                              Navigator.of(dialogContext).pop();
+                              Navigator.of(context).pop();
                               // Rediriger vers la page de connexion
                               // Navigator.pushAndRemoveUntil(
                               //   context,
@@ -138,14 +139,53 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                       ),
                     );
                   } else {
-                    _showError(result['message'] ?? 'Erreur lors de la suppression');
+                    if (!mounted) return;
+                    if (result['errorCode'] == "requires-recent-login"){
+                      print('❌ Cette opération requièrt une authentification récente');
+                      showDialog<bool>(
+                        context: context,
+                        barrierDismissible: false,
+                        builder: (context) => AlertDialog(
+                          title: const Text(
+                            '⚠️ Vérification',
+                            style: TextStyle(color: Colors.red),
+                          ),
+                          content: const Text(
+                            'Veuillez vous déconnecter et vous reconnecter à nouveau pour supprimer \nvotre compte.\n\n'
+                            'Rassurez-vous de vous reconnecter avec le meme compte pour le supprimer.'
+                            ,
+                          ),
+                          actions: [
+                            // TextButton(
+                            //   onPressed: () => Navigator.pop(context),
+                            //   child: const Text('Annuler'),
+                            // ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () async{
+                                Navigator.pop(context);
+                              },
+                              child: const Text('OK'),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    else{
+                      _showError(result['message'] ?? 'Erreur lors de la suppression');
+                    }
                   }
-                // }
               } catch (e) {
-                // if (mounted) {
-                //   _showError('Erreur: $e');
-                // }
-                throw (e);
+                if (mounted) {
+                  // _showError('Erreur: $e');
+
+                  // Le message d'erreur ci-bas est beaucoup plus proche
+                  // du language humain que celui de dessus (juste une suggestion)
+                  _showError('Une erreur est survenue');
+                }
               } finally {
                 if (mounted) {
                   setState(() {

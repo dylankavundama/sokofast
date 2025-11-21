@@ -23,7 +23,7 @@ class DeleteAccountService {
   static Future<Map<String, dynamic>> deleteAccount({
     required String firebaseUid,
     required String email,
-    required BuildContext context,
+    // required BuildContext context,
   }) async {
     try {
       print("🗑️ Début de la suppression du compte: $email");
@@ -39,7 +39,7 @@ class DeleteAccountService {
       await _deleteFromFirestore(firebaseUid);
 
       // 3. Supprimer le compte Firebase Auth
-      await _deleteFromFirebaseAuth(context);
+      await _deleteFromFirebaseAuth();
 
       // 4. Supprimer toutes les données locales
       await _deleteLocalData();
@@ -53,7 +53,13 @@ class DeleteAccountService {
         'success': true,
         'message': 'Compte et toutes les données supprimés avec succès',
       };
-    } catch (e, stackTrace) {
+    } on FirebaseAuthException catch (e){
+      return {
+        'errorCode': e.code,
+      };
+    }
+
+    catch (e, stackTrace) {
       print("❌ Erreur lors de la suppression du compte: $e");
       print("Stack trace: $stackTrace");
       return {
@@ -122,49 +128,12 @@ class DeleteAccountService {
   }
 
   /// Supprime le compte Firebase Auth
-  static Future<void> _deleteFromFirebaseAuth(BuildContext context) async {
+  static Future<void> _deleteFromFirebaseAuth() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         await user.delete();
         print("✅ Compte Firebase Auth supprimé");
-      }
-    } on FirebaseAuthException catch(e) {
-      if (e.code == "requires-recent-login"){
-        await showDialog<bool>(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => AlertDialog(
-            title: const Text(
-              '⚠️ Vérification',
-              style: TextStyle(color: Colors.red),
-            ),
-            content: const Text(
-              'Veuillez vous déconnecter et vous reconnecter à nouveau pour supprimer votre compte.',
-            ),
-            actions: [
-              // TextButton(
-              //   onPressed: () => Navigator.pop(context),
-              //   child: const Text('Annuler'),
-              // ),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                  foregroundColor: Colors.white,
-                ),
-                onPressed: () async{
-                  await FirebaseAuth.instance.signOut();
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginPage()),
-                        (Route<dynamic> route) => false,
-                  );
-                },
-                child: const Text('SE DECONNECTER'),
-              ),
-            ],
-          ),
-        );
       }
     }
     catch (e) {

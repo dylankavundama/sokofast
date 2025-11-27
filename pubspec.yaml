@@ -3,7 +3,7 @@ description: Application des ventes en ligne.
 # description: A new Flutter project.
 publish_to: "none"
 
-version: 2.2.0+25
+version: 2.2.0+27
 
 environment:
   sdk: ">=3.5.0 <4.2.0"
@@ -36,7 +36,7 @@ dependencies:
   geocoding :
   permission_handler: ^11.0.1
   sign_in_with_apple: ^7.0.1
-  crypto: ^3.0.3
+  crypto: ^3.0.7
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -45,7 +45,6 @@ dev_dependencies:
 #  flutter_launcher_icons:
   flutter_lints: 5.0.0
   flutter_launcher_icons: ^0.14.4
-  
 #  build_runner:
 #  flutter_gen_runner:
 #  rename_app: ^1.6.1

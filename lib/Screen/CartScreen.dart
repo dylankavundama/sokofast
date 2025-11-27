@@ -35,6 +35,11 @@ class _CartScreenState extends State<CartScreen> {
   Position? _currentPosition;
   bool _isLocating = false;
 
+  // 💡 NOUVEAUX ÉTATS POUR LA GESTION DES VILLES
+  List<Map<String, dynamic>> _villes = [];
+  int? _selectedVilleId;
+  bool _isLoadingVilles = false;
+
   // Récupération des constantes FlexPay
   final String _FLEXPAY_GATEWAY_URL = ApiConfig.FLEXPAY_GATEWAY_URL;
   final String _MERCHANT_ID = ApiConfig.MERCHANT_ID;
@@ -47,6 +52,7 @@ class _CartScreenState extends State<CartScreen> {
     _loadCartLocally();
     _loadLoggedInUser();
     _getCurrentLocation(); // 💡 Déclenche la recherche de la position au démarrage
+    _loadVilles(); // 💡 Charger la liste des villes
   }
 
   @override
@@ -91,6 +97,46 @@ class _CartScreenState extends State<CartScreen> {
     List<String> orders = prefs.getStringList('orderHistory') ?? [];
     orders.add(jsonEncode(order));
     await prefs.setStringList('orderHistory', orders);
+  }
+
+  // ------------------------------------------------------------------
+  // LOGIQUE DE GESTION DES VILLES
+  // ------------------------------------------------------------------
+
+  // 💡 NOUVELLE FONCTION : Charger la liste des villes depuis l'API
+  Future<void> _loadVilles() async {
+    setState(() {
+      _isLoadingVilles = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/get_villes.php'),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['data'] != null) {
+          setState(() {
+            _villes = List<Map<String, dynamic>>.from(data['data']);
+            _isLoadingVilles = false;
+          });
+        } else {
+          setState(() {
+            _isLoadingVilles = false;
+          });
+        }
+      } else {
+        setState(() {
+          _isLoadingVilles = false;
+        });
+      }
+    } catch (e) {
+      print('Erreur lors du chargement des villes: $e');
+      setState(() {
+        _isLoadingVilles = false;
+      });
+    }
   }
 
   // ------------------------------------------------------------------
@@ -263,7 +309,7 @@ class _CartScreenState extends State<CartScreen> {
 
       if (code == '0') {
         // 3. Enregistrer la commande
-        await sendOrderToDatabase(
+        final orderResult = await sendOrderToDatabase(
             context: context,
             name: name,
             address: address,
@@ -274,17 +320,20 @@ class _CartScreenState extends State<CartScreen> {
             paymentMethod: "FlexPay :$clientPhoneNumber",
             status: 'PENDING',
             latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES
-            longitude: longitude);
+            longitude: longitude,
+            villeId: _selectedVilleId); // 💡 ENVOI DE L'ID DE LA VILLE
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                "Paiement initié. Veuillez valider la demande sur votre téléphone (numéro : $clientPhoneNumber)."),
-            backgroundColor: Colors.blue,
-            duration: const Duration(seconds: 7),
-          ),
-        );
-        Navigator.of(context).pop();
+        if (orderResult != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                  "Paiement initié. Veuillez valider la demande sur votre téléphone (numéro : $clientPhoneNumber). Le panier a été vidé."),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 7),
+            ),
+          );
+          Navigator.of(context).pop();
+        }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -319,6 +368,7 @@ class _CartScreenState extends State<CartScreen> {
     String status = 'en cours', // Statut par défaut
     double? latitude, // 💡 PARAMÈTRE MIS À JOUR
     double? longitude, // 💡 PARAMÈTRE MIS À JOUR
+    int? villeId, // 💡 NOUVEAU PARAMÈTRE : ID de la ville
   }) async {
     final url = '$baseUrl/commande.php';
 
@@ -350,12 +400,27 @@ class _CartScreenState extends State<CartScreen> {
             'status': status,
             'latitude': latitude, // 💡 ENVOI
             'longitude': longitude, // 💡 ENVOI
+            'ville_id': villeId, // 💡 NOUVEAU : ENVOI DE L'ID DE LA VILLE (peut être null)
           }),
         );
 
         if (response.statusCode < 200 || response.statusCode >= 300) {
-          throw Exception(
-              'Échec de l\'envoi de la commande au serveur: ${response.statusCode}');
+          // 💡 NOUVEAU : Récupérer le message d'erreur détaillé du serveur
+          String errorMessage = 'Échec de l\'envoi de la commande au serveur: ${response.statusCode}';
+          try {
+            final errorData = jsonDecode(response.body);
+            if (errorData['message'] != null) {
+              errorMessage = errorData['message'];
+              if (errorData['debug'] != null) {
+                errorMessage += '\nDétails: ${errorData['debug']}';
+              }
+            }
+          } catch (e) {
+            // Si le parsing échoue, utiliser le body brut
+            errorMessage += '\nRéponse serveur: ${response.body}';
+          }
+          print('❌ Erreur commande: $errorMessage');
+          throw Exception(errorMessage);
         }
       }
 
@@ -376,20 +441,19 @@ class _CartScreenState extends State<CartScreen> {
 
       await _saveOrderToHistory(orderData);
 
-      // Vider le panier uniquement si le paiement est immédiat (pas PENDING)
-      if (status != 'PENDING') {
-        // Supposons que `setState` et `_saveCartLocally` sont disponibles dans la classe d'état
-        // setState(() => cartItems.clear());
-        // await _saveCartLocally();
+      // 💡 NOUVEAU : Vider le panier après une commande réussie (tous les statuts)
+      setState(() {
+        cartItems.clear();
+      });
+      await _saveCartLocally();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Votre commande a été traitée avec succès !"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Votre commande a été enregistrée avec succès ! Le panier a été vidé."),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 4),
+        ),
+      );
 
       return orderData;
     } on Exception catch (e) {
@@ -406,13 +470,12 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   // Définition de la constante pour le pourcentage, rend le code plus lisible
-  double _SERVICE_FEE_RATE = 0.30; // 30% de supplément (frais de service/livraison)
+  static const double _SERVICE_FEE_RATE = 0.30; // 30% de supplément (frais de service/livraison)
 
  void _orderViaWhatsApp(BuildContext context) async {
   final address = addressController.text;
 
   // 1. Calcul du montant total de BASE (prix des produits uniquement)
-  const double _SERVICE_FEE_RATE = 0.30; // Réutilisation de la constante
   final double baseAmount = cartItems.fold(
     0.0,
     (sum, item) =>
@@ -498,11 +561,15 @@ class _CartScreenState extends State<CartScreen> {
       status: 'en cours',
       latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
       longitude: longitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
+      villeId: _selectedVilleId, // 💡 ENVOI DE L'ID DE LA VILLE
     );
 
     if (orderResult != null) {
+      // 💡 Le panier a déjà été vidé dans sendOrderToDatabase
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
+        // Fermer le dialog après l'envoi WhatsApp
+        Navigator.of(context).pop();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Impossible d'ouvrir WhatsApp")),
@@ -531,80 +598,150 @@ class _CartScreenState extends State<CartScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          title: const Text('Adresse et Contact'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 💡 Affichage du statut GPS
-                Text(locationStatus,
-                    style: TextStyle(
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: const Text('Adresse de livraison'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 💡 NOUVEAU : Sélecteur de ville (OBLIGATOIRE)
+                    if (_isLoadingVilles)
+                      const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: CircularProgressIndicator(),
+                      )
+                    else if (_villes.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.all(8.0),
+                        child: Text(
+                          'Aucune ville disponible',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      )
+                    else
+                      DropdownButtonFormField<int>(
+                        value: _selectedVilleId,
+                        decoration: const InputDecoration(
+                          labelText: 'Ville de livraison *',
+                          hintText: 'Sélectionnez votre ville',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.location_city),
+                        ),
+                        items: _villes.map((ville) {
+                          return DropdownMenuItem<int>(
+                            value: ville['id'] as int,
+                            child: Text(ville['nom'] as String),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setDialogState(() {
+                            _selectedVilleId = value;
+                          });
+                        },
+                        validator: (value) {
+                          if (value == null) {
+                            return 'Veuillez sélectionner une ville';
+                          }
+                          return null;
+                        },
+                      ),
+                    const SizedBox(height: 20),
+
+                    // 💡 Affichage du statut GPS
+                    Text(
+                      locationStatus,
+                      style: TextStyle(
                         color: _currentPosition != null
                             ? Colors.green
                             : Colors.orange,
-                        fontWeight: FontWeight.bold)),
-                if (_currentPosition == null && !_isLocating)
-                  TextButton.icon(
-                      onPressed: _getCurrentLocation,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer la localisation GPS')),
-                const SizedBox(height: 30),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
+                    ),
+                    if (_currentPosition == null && !_isLocating)
+                      TextButton.icon(
+                        onPressed: _getCurrentLocation,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Réessayer la localisation GPS'),
+                      ),
+                    const SizedBox(height: 20),
 
-                // Champ Adresse
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Votre adresse de livraison (si pas de GPS)',
-                    hintText: 'Ex: 123 Rue de la Paix',
-                    border: OutlineInputBorder(),
-                  ),
+                    // Champ Adresse
+                    TextField(
+                      controller: addressController,
+                      decoration: const InputDecoration(
+                        labelText: 'Votre adresse complète *',
+                        hintText: 'Ex: 123 Rue de la Paix, Quartier...',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.home),
+                      ),
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 20),
+                    
+                    // Champ Téléphone
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      decoration: const InputDecoration(
+                        labelText: 'Numéro Mobile Money *',
+                        hintText: '243812345678',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.phone),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 30),
-                // Champ Téléphone
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'Numéro Mobile Money (Ex: 243812345678)',
-                    hintText: '243xxxxxxxxx',
-                    border: OutlineInputBorder(),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Annuler'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    // Validation : ville, adresse et téléphone sont obligatoires
+                    if (_selectedVilleId == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Veuillez sélectionner une ville de livraison."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } else if (addressController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Veuillez remplir votre adresse complète."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } else if (phoneController.text.isEmpty ||
+                        !_validatePhoneNumber(phoneController.text.trim())) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            "Numéro de téléphone invalide (format: 243xxxxxxxxx)."),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    } else {
+                      Navigator.of(context).pop();
+                      onConfirm();
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: backdColor,
                   ),
+                  child: const Text('Confirmer'),
                 ),
               ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Validation : adresse ou GPS doit être disponible
-                if (_currentPosition == null &&
-                    addressController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            "Veuillez remplir l'adresse ou activer le GPS.")),
-                  );
-                } else if (phoneController.text.isEmpty ||
-                    !_validatePhoneNumber(phoneController.text.trim())) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            "Numéro de téléphone FlexPay manquant ou invalide (243xxxxxxxx).")),
-                  );
-                } else {
-                  Navigator.of(context).pop();
-                  onConfirm();
-                }
-              },
-              child: const Text('Confirmer'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -613,15 +750,7 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double totalAmount = cartItems.fold(
-      0.0,
-      (double sum, item) {
-        final price =
-            double.tryParse(item['product']['price'].toString()) ?? 0.0;
-        return sum + (price * item['quantity']);
-      },
-    );
-// 1. Calculer le montant de base (Sous-total)
+    // 1. Calculer le montant de base (Sous-total)
     final double baseAmount = cartItems.fold(
       0.0,
       (double sum, item) {
@@ -639,6 +768,9 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: backdColor,
+        leading: IconButton(icon: Icon(Icons.arrow_back_ios_new_outlined, color: Colors.white,), onPressed: (){
+          Navigator.pop(context);
+        },),
         title: const Text('Mon Panier', style: TextStyle(color: Colors.white)),
         actions: [
           IconButton(

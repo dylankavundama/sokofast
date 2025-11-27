@@ -1,9 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // NOUVEL IMPORT SHIMMER
-import 'package:soko/Product/productCard.dart'; 
+import 'package:soko/Product/productCard.dart';
 import 'package:soko/style.dart'; // Contient 'loading' et 'primaryYellow'
 
 class ProductListScreen extends StatefulWidget {
@@ -218,7 +219,10 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.all(12.0),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16.0,
+                                      vertical: 12.0,
+                                    ),
                                     child: Text(
                                       categoryName,
                                       style: const TextStyle(
@@ -227,21 +231,26 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       ),
                                     ),
                                   ),
-                                  SizedBox(
-                                    height: 260,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount: products.length,
-                                      itemBuilder: (context, index) {
-                                        return Container(
-                                          width: 160,
-                                          margin:
-                                              const EdgeInsets.symmetric(horizontal: 8),
-                                          child: ProductCard(product: products[index]),
-                                        );
-                                      },
+                                  // 💡 NOUVEAU : Affichage vertical en grille
+                                  GridView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12.0,
+                                      vertical: 8.0,
                                     ),
+                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: 2, // 2 colonnes
+                                      childAspectRatio: 0.7, // Ratio largeur/hauteur
+                                      crossAxisSpacing: 12.0,
+                                      mainAxisSpacing: 12.0,
+                                    ),
+                                    itemCount: products.length,
+                                    itemBuilder: (context, index) {
+                                      return ProductCard(product: products[index]);
+                                    },
                                   ),
+                                  const SizedBox(height: 16),
                                 ],
                               );
                             }).toList(),
@@ -271,7 +280,6 @@ class ShimmerLoadingList extends StatelessWidget {
       baseColor: baseColor,
       highlightColor: highlightColor,
       child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(), 
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: List.generate(3, (i) { // Simule 3 sections de catégories
@@ -280,7 +288,10 @@ class ShimmerLoadingList extends StatelessWidget {
               children: [
                 // 1. Simuler le Titre de Catégorie
                 Padding(
-                  padding: const EdgeInsets.all(12.0),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0,
+                    vertical: 12.0,
+                  ),
                   child: Container(
                     width: 150,
                     height: 20,
@@ -291,53 +302,56 @@ class ShimmerLoadingList extends StatelessWidget {
                   ),
                 ),
                 
-                // 2. Simuler la Liste Horizontale (Row de ProductCard)
-                SizedBox(
-                  height: 260,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
+                // 💡 NOUVEAU : Simuler la Grille Verticale
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.7,
+                      crossAxisSpacing: 12.0,
+                      mainAxisSpacing: 12.0,
+                    ),
                     itemCount: 4, // Simule 4 produits par catégorie
                     itemBuilder: (context, index) {
-                      return Container(
-                        width: 160,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Simuler l'Image (grande boîte)
-                            Container(
-                              height: 160,
-                              width: double.infinity,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            // Simuler le Nom du Produit (Ligne 1)
-                            Container(
-                              width: double.infinity,
-                              height: 10,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Simuler l'Image (grande boîte)
+                          Container(
+                            height: 160,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
                               color: Colors.white,
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            // Simuler le Nom du Produit (Ligne 2)
-                            Container(
-                              width: 80,
-                              height: 10,
-                              color: Colors.white,
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            ),
-                            const SizedBox(height: 8),
-                            // Simuler le Prix
-                            Container(
-                              width: 60,
-                              height: 12,
-                              color: Colors.white,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Simuler le Nom du Produit (Ligne 1)
+                          Container(
+                            width: double.infinity,
+                            height: 10,
+                            color: Colors.white,
+                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          ),
+                          // Simuler le Nom du Produit (Ligne 2)
+                          Container(
+                            width: 80,
+                            height: 10,
+                            color: Colors.white,
+                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          ),
+                          const SizedBox(height: 8),
+                          // Simuler le Prix
+                          Container(
+                            width: 60,
+                            height: 12,
+                            color: Colors.white,
+                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                          ),
+                        ],
                       );
                     },
                   ),

@@ -45,6 +45,7 @@ dev_dependencies:
 #  flutter_launcher_icons:
   flutter_lints: 5.0.0
   flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.1
 #  build_runner:
 #  flutter_gen_runner:
 #  rename_app: ^1.6.1
@@ -55,6 +56,18 @@ flutter_icons:
   ios: true
   remove_alpha_ios: true
   image_path: "assets/logo.png"
+
+flutter_native_splash:
+  # Cette option génère un splash screen natif pour Android et iOS
+  color: "#FFFFFF"
+  image: assets/icon.png
+  # android: true
+  # ios: true
+  # web: false
+  # remove: false
+  # android_12: true
+  # android_gravity: center
+  # ios_content_mode: center
 
 # flutter_gen:
 #   output: lib/custom_assets/ # Optional (default: lib/gen/)

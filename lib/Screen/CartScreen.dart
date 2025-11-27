@@ -1,21 +1,21 @@
 import 'dart:convert';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:soko/api_config.dart';
-import 'package:soko/services.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart'; // 💡 NOUVEL IMPORT
-import 'package:soko/utils/responsive.dart';
-
+import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:soko/Auth/loginPage.dart';
 // Importez vos fichiers de support
 import 'package:soko/OrderHistoryScreen.dart';
+import 'package:soko/api_config.dart';
+import 'package:soko/services.dart';
 import 'package:soko/style.dart';
-import 'package:soko/Auth/loginPage.dart';
+import 'package:soko/utils/responsive.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -400,45 +400,75 @@ class _CartScreenState extends State<CartScreen> {
         final double calculatedIndividualProductBasePrice =
             productPrice * productQuantity;
 
+        // 💡 NOUVEAU : Préparer les données à envoyer
+        final requestData = {
+          'name': name,
+          'address': address,
+          'transaction_id': transactionId,
+          'product_name': product['product']['name'],
+          'quantity': productQuantity,
+          'payment_method': paymentMethod,
+          // 💡 ENVOI du prix de BASE au serveur pour cette ligne
+          'total_price': calculatedIndividualProductBasePrice,
+          'status': status,
+          'latitude': latitude, // 💡 ENVOI
+          'longitude': longitude, // 💡 ENVOI
+          'ville_id': villeId, // 💡 NOUVEAU : ENVOI DE L'ID DE LA VILLE (peut être null)
+        };
+        
+        // 💡 LOG : Enregistrer les données envoyées pour debug
+        print('📤 Envoi commande - Transaction: $transactionId, Produit: ${product['product']['name']}, Ville ID: $villeId');
+        
         final response = await http.post(
           Uri.parse(url),
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
-          body: jsonEncode({
-            'name': name,
-            'address': address,
-            'transaction_id': transactionId,
-            'product_name': product['product']['name'],
-            'quantity': productQuantity,
-            'payment_method': paymentMethod,
-            // 💡 ENVOI du prix de BASE au serveur pour cette ligne
-            'total_price': calculatedIndividualProductBasePrice,
-            'status': status,
-            'latitude': latitude, // 💡 ENVOI
-            'longitude': longitude, // 💡 ENVOI
-            'ville_id': villeId, // 💡 NOUVEAU : ENVOI DE L'ID DE LA VILLE (peut être null)
-          }),
+          body: jsonEncode(requestData),
         );
 
         if (response.statusCode < 200 || response.statusCode >= 300) {
-          // 💡 NOUVEAU : Récupérer le message d'erreur détaillé du serveur
+          // 💡 AMÉLIORATION : Récupérer le message d'erreur détaillé du serveur
           String errorMessage = 'Échec de l\'envoi de la commande au serveur: ${response.statusCode}';
+          String debugInfo = '';
+          
+          // 💡 NOUVEAU : Logger la réponse complète pour debug
+          print('❌ Réponse serveur (status ${response.statusCode}):');
+          print('   Body: ${response.body.isNotEmpty ? response.body : "(vide)"}');
+          print('   Headers: ${response.headers}');
+          
           try {
-            final errorData = jsonDecode(response.body);
-            if (errorData['message'] != null) {
-              errorMessage = errorData['message'];
-              if (errorData['debug'] != null) {
-                errorMessage += '\nDétails: ${errorData['debug']}';
+            if (response.body.isNotEmpty) {
+              final errorData = jsonDecode(response.body);
+              if (errorData is Map) {
+                if (errorData['message'] != null) {
+                  errorMessage = errorData['message'].toString();
+                }
+                if (errorData['debug'] != null) {
+                  if (errorData['debug'] is Map) {
+                    debugInfo = '\nDétails techniques: ${jsonEncode(errorData['debug'])}';
+                  } else {
+                    debugInfo = '\nDétails: ${errorData['debug']}';
+                  }
+                }
               }
+            } else {
+              errorMessage += '\nLe serveur n\'a retourné aucune information.';
+              debugInfo = '\nVérifiez les logs serveur pour plus de détails.';
             }
           } catch (e) {
             // Si le parsing échoue, utiliser le body brut
-            errorMessage += '\nRéponse serveur: ${response.body}';
+            if (response.body.isNotEmpty) {
+              errorMessage += '\nRéponse serveur: ${response.body.substring(0, response.body.length > 200 ? 200 : response.body.length)}';
+            } else {
+              errorMessage += '\nRéponse serveur vide. Erreur de parsing: $e';
+            }
           }
-          print('❌ Erreur commande: $errorMessage');
-          throw Exception(errorMessage);
+          
+          final fullErrorMessage = errorMessage + debugInfo;
+          print('❌ Erreur commande: $fullErrorMessage');
+          throw Exception(fullErrorMessage);
         }
       }
 

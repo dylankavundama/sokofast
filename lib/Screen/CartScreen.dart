@@ -673,15 +673,58 @@ class _CartScreenState extends State<CartScreen> {
 
     showDialog(
       context: context,
+      barrierDismissible: false, // Empêcher la fermeture accidentelle
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text('Adresse de livraison'),
-              content: SingleChildScrollView(
+            return Dialog(
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: Responsive.isMobile(context) ? 16 : 100,
+                vertical: Responsive.isMobile(context) ? 24 : 50,
+              ),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: Responsive.isMobile(context) ? double.infinity : 600,
+                  maxHeight: MediaQuery.of(context).size.height * 0.8,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
+                    // En-tête avec titre et bouton fermer
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: backdColor,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(12),
+                          topRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Adresse de livraison',
+                              style: GoogleFonts.abel(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                     // 💡 NOUVEAU : Sélecteur de ville (OBLIGATOIRE)
                     if (_isLoadingVilles)
                       const Padding(
@@ -769,16 +812,30 @@ class _CartScreenState extends State<CartScreen> {
                         prefixIcon: Icon(Icons.phone),
                       ),
                     ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Annuler'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
+                          ],
+                        ),
+                      ),
+                    ),
+                    // Actions en bas
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[50],
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(12),
+                          bottomRight: Radius.circular(12),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Annuler'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                  onPressed: () async {
                     // Validation : ville, adresse et téléphone sont obligatoires
                     if (_selectedVilleId == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -786,36 +843,70 @@ class _CartScreenState extends State<CartScreen> {
                           content: Text(
                             "Veuillez sélectionner une ville de livraison."),
                           backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
                         ),
                       );
-                    } else if (addressController.text.trim().isEmpty) {
+                      return;
+                    }
+                    
+                    if (addressController.text.trim().isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
                             "Veuillez remplir votre adresse complète."),
                           backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
                         ),
                       );
-                    } else if (phoneController.text.isEmpty ||
+                      return;
+                    }
+                    
+                    if (phoneController.text.isEmpty ||
                         !_validatePhoneNumber(phoneController.text.trim())) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text(
                             "Numéro de téléphone invalide (format: 243xxxxxxxxx)."),
                           backgroundColor: Colors.red,
+                          duration: Duration(seconds: 3),
                         ),
                       );
-                    } else {
-                      Navigator.of(context).pop();
+                      return;
+                    }
+                    
+                    // Fermer le dialogue d'abord
+                    Navigator.of(context).pop();
+                    
+                    // Attendre un court instant pour s'assurer que le dialogue est fermé
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    
+                    // Appeler le callback
+                    try {
                       onConfirm();
+                    } catch (e) {
+                      print('Erreur lors de l\'exécution du callback: $e');
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur lors du traitement: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: backdColor,
-                  ),
-                  child: const Text('Confirmer'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: backdColor,
+                            ),
+                            child: const Text('Confirmer'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             );
           },
         );

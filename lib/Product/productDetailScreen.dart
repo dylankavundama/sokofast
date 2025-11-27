@@ -260,24 +260,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     backgroundColor: Colors.green,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
                     if (nameController.text.isEmpty ||
                         addressController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                             content:
-                                Text("Veuillez remplir le nom et l'adresse")),
+                                Text("Veuillez remplir le nom et l'adresse"),
+                            duration: Duration(seconds: 3),
+                        ),
                       );
                       return;
                     }
+                    // Fermer le dialogue d'abord
                     Navigator.pop(context);
-                    _sendOrderViaWhatsApp(
-                      name: nameController.text,
-                      address: addressController.text,
-                      quantity: _quantity,
-                      product: product,
-                      total: total, // Utilise le total majoré
-                    );
+                    // Attendre un court instant pour s'assurer que le dialogue est fermé
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    // Appeler la fonction
+                    try {
+                      _sendOrderViaWhatsApp(
+                        name: nameController.text,
+                        address: addressController.text,
+                        quantity: _quantity,
+                        product: product,
+                        total: total, // Utilise le total majoré
+                      );
+                    } catch (e) {
+                      print('Erreur lors de l\'envoi WhatsApp: $e');
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur lors du traitement: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    }
                   },
                 ),
                 const SizedBox(height: 12),
@@ -291,9 +310,26 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     backgroundColor: Colors.orange,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    // Fermer le dialogue d'abord
                     Navigator.pop(context);
-                    _showMobileMoneyOptions(context, total); // Utilise le total majoré
+                    // Attendre un court instant pour s'assurer que le dialogue est fermé
+                    await Future.delayed(const Duration(milliseconds: 100));
+                    // Appeler la fonction
+                    try {
+                      _showMobileMoneyOptions(context, total); // Utilise le total majoré
+                    } catch (e) {
+                      print('Erreur lors de l\'affichage Mobile Money: $e');
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Erreur lors du traitement: ${e.toString()}'),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      }
+                    }
                   },
                 ),
               ],

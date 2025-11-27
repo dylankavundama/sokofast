@@ -1,0 +1,24 @@
+# Configuration PHP via .htaccess (alternative si .user.ini ne fonctionne pas)
+# Ces directives surchargent les valeurs du php.ini
+# 
+# IMPORTANT: Utilisez .user.ini de préférence (compatible cPanel)
+# Ce fichier .htaccess est une alternative pour Apache standard
+
+# Limite de taille pour les fichiers uploadés (augmenté de 2M à 20M)
+php_value upload_max_filesize 20M
+
+# Limite de taille pour les données POST (doit être >= upload_max_filesize)
+php_value post_max_size 25M
+
+# Limite de mémoire (augmenté de 128M à 256M)
+php_value memory_limit 256M
+
+# Temps d'exécution maximum (augmenté de 30 à 300 secondes)
+php_value max_execution_time 300
+
+# Temps maximum pour traiter les données POST (augmenté de 60 à 300 secondes)
+php_value max_input_time 300
+
+# Nombre maximum de variables d'entrée
+php_value max_input_vars 1000
+

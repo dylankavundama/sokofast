@@ -149,7 +149,27 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (_selectedImage == null) return null;
 
     try {
-      print("📷 Tentative d'upload d'image avec Mot de passe d'application...");
+      // Vérifier la taille du fichier avant l'upload (limite: 20 Mo)
+      final file = File(_selectedImage!.path);
+      final fileSize = await file.length();
+      const maxSize = 20 * 1024 * 1024; // 20 Mo en bytes
+      
+      if (fileSize > maxSize) {
+        final sizeInMB = (fileSize / (1024 * 1024)).toStringAsFixed(2);
+        print("❌ Fichier trop volumineux: $sizeInMB Mo (limite: 20 Mo)");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("L'image est trop volumineuse ($sizeInMB Mo). Veuillez choisir une image de moins de 20 Mo."),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+        return null;
+      }
+
+      print("📷 Tentative d'upload d'image (${(fileSize / (1024 * 1024)).toStringAsFixed(2)} Mo)...");
       var request = http.MultipartRequest(
         'POST',
         Uri.parse("$_baseUrl$_wpApiPath/media"), // API Media de WordPress
@@ -177,19 +197,42 @@ class _AddProductScreenState extends State<AddProductScreen> {
         print("✅ IMAGE UPLOADÉE AVEC SUCCÈS (ID: ${jsonResponse['id']})");
         return jsonResponse['id'];
       } else {
-        print("❌ ÉCHEC UPLOAD: ${jsonResponse['message']}");
+        String errorMessage = jsonResponse['message'] ?? 'Erreur inconnue';
+        
+        // Messages d'erreur plus explicites
+        if (errorMessage.contains('upload_max_filesize') || errorMessage.contains('exceeds')) {
+          errorMessage = 'L\'image est trop volumineuse. Limite actuelle: 20 Mo. Veuillez réduire la taille de l\'image ou contacter l\'administrateur pour augmenter la limite.';
+        } else if (errorMessage.contains('post_max_size')) {
+          errorMessage = 'Les données envoyées sont trop volumineuses (limite: 25 Mo). Veuillez réduire la taille de l\'image.';
+        }
+        
+        print("❌ ÉCHEC UPLOAD: $errorMessage");
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("Erreur upload image: ${jsonResponse['message']}"),
-              backgroundColor: Colors.orange,
+              content: Text("Erreur upload image: $errorMessage"),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
             ),
           );
         }
         return null;
       }
     } catch (e) {
+      String errorMsg = 'Erreur lors de l\'upload de l\'image';
+      if (e.toString().contains('upload_max_filesize') || e.toString().contains('exceeds')) {
+        errorMsg = 'L\'image est trop volumineuse. Limite actuelle: 20 Mo. Veuillez réduire la taille de l\'image.';
+      }
       print("❌ EXCEPTION UPLOAD: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMsg),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
       return null;
     }
   }

@@ -5,9 +5,7 @@ import 'package:soko/Product/add.dart';
 import 'package:soko/Profil/EditProductScreen.dart';
 import 'package:soko/style.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// 💡 Créez un nouveau fichier `image_viewer_screen.dart` ou ajoutez cette classe
-// DANS le fichier où vous en avez besoin (par exemple, mes_produits.dart).
-import 'package:flutter/material.dart';
+import 'package:soko/utils/responsive.dart';
 
 // 💡 Correction: La classe est immutable, donc le constructeur doit être const.
 // 💡 Correction: initialIndex doit être initialisé car il est final.
@@ -659,9 +657,11 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
 
           // Liste des produits
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _products.length,
+            child: Responsive.centerContent(
+              context,
+              ListView.builder(
+                padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
+                itemCount: _products.length,
               itemBuilder: (context, index) {
                 final product = _products[index];
                 final String name = product['name'] ?? 'Sans nom';
@@ -831,6 +831,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                   ),
                 );
               },
+              ),
             ),
           ),
         ],

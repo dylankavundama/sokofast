@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soko/Auth/loginPage.dart';
 import 'package:soko/style.dart';
+import 'package:soko/utils/responsive.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -78,7 +79,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               children: [
                 // Bouton "Sauter"
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.5),
                   child: Align(
                     alignment: Alignment.topRight,
                     child: TextButton(
@@ -86,20 +87,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         "Sauter",
                         style: TextStyle(
-                          color: primaryYellow, fontSize: 16, fontWeight: FontWeight.bold),
+                          color: primaryYellow,
+                          fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
                 ),
                   Padding(
-                    padding: const EdgeInsets.all(130.0),
-                    child: Image.asset('assets/logo.png', height: 100),
+                    padding: EdgeInsets.all(Responsive.isMobile(context) ? 130.0 : 80.0),
+                    child: Image.asset(
+                      'assets/logo.png',
+                      height: Responsive.isMobile(context) ? 100.0 : 150.0,
+                    ),
                   ),
                 const Spacer(), // Prend l'espace disponible
               
                 // Indicateurs de page et boutons de navigation
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 30.0),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Responsive.getHorizontalPadding(context) * 1.25,
+                    vertical: Responsive.getVerticalPadding(context) * 3.75,
+                  ),
                   child: Column(
                     children: [
                       
@@ -110,10 +120,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           (index) => buildDot(index, context),
                         ),
                       ),
-                      const SizedBox(height: 40),
+                      SizedBox(height: Responsive.getVerticalPadding(context) * 5),
                       SizedBox(
-                        width: 250,
-                        height: 50,
+                        width: Responsive.isMobile(context) ? 250.0 : 300.0,
+                        height: Responsive.getVerticalPadding(context) * 6.25,
                         child: _currentPage == onboardingData.length - 1
                             ? ElevatedButton(
                                 onPressed: _skipOnboarding,
@@ -123,9 +133,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   "Commencer",
-                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                  style: TextStyle(
+                                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 15, tablet: 18),
+                                    color: Colors.white,
+                                  ),
                                 ),
                               )
                             : ElevatedButton(
@@ -141,9 +154,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                child: const Text(
+                                child: Text(
                                   "Suivant",
-                                  style: TextStyle(fontSize: 18, color: Colors.white),
+                                  style: TextStyle(
+                                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 20),
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                       ),
@@ -213,32 +229,37 @@ class OnboardingContent extends StatelessWidget {
 
         // Le texte est positionné en bas de l'écran
         SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+          child: Responsive.centerContent(
+            context,
+            Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.getHorizontalPadding(context) * 2.5,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: Responsive.getAdaptiveFontSize(context, mobile: 28, tablet: 36, desktop: 42),
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 15),
-                Text(
-                  description,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    color: Colors.white70,
+                  SizedBox(height: Responsive.getVerticalPadding(context) * 1.875),
+                  Text(
+                    description,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 22),
+                      color: Colors.white70,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 150), // Espace pour les boutons de navigation en bas
-              ],
+                  SizedBox(height: Responsive.isMobile(context) ? 150.0 : 200.0), // Espace pour les boutons de navigation en bas
+                ],
+              ),
             ),
           ),
         ),

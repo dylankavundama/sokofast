@@ -1,10 +1,10 @@
 // delete_account_screen.dart - Écran de confirmation et suppression de compte
 
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:soko/Auth/loginPage.dart';
 import 'package:soko/Profil/delete_account_service.dart';
+import 'package:soko/utils/responsive.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
   const DeleteAccountScreen({super.key});
@@ -227,41 +227,43 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Icône d'avertissement
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                shape: BoxShape.circle,
+      body: Responsive.centerContent(
+        context,
+        SingleChildScrollView(
+          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 1.5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Icône d'avertissement
+              Container(
+                padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 1.25),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.warning_amber_rounded,
+                  size: Responsive.isMobile(context) ? 64.0 : 80.0,
+                  color: Colors.red[700],
+                ),
               ),
-              child: Icon(
-                Icons.warning_amber_rounded,
-                size: 64,
-                color: Colors.red[700],
-              ),
-            ),
-            const SizedBox(height: 24),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 3),
 
-            // Titre
-            Text(
-              'Attention !',
-              style: GoogleFonts.roboto(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Colors.red[700],
+              // Titre
+              Text(
+                'Attention !',
+                style: GoogleFonts.roboto(
+                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 28, tablet: 32, desktop: 36),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red[700],
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 2),
 
             // Message d'avertissement
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
               decoration: BoxDecoration(
                 color: Colors.red[50],
                 borderRadius: BorderRadius.circular(12),
@@ -273,17 +275,19 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   Text(
                     'La suppression de votre compte est une action IRRÉVERSIBLE.',
                     style: GoogleFonts.roboto(
-                      fontSize: 16,
+                      fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
                       fontWeight: FontWeight.bold,
                       color: Colors.red[900],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
+                  SizedBox(height: Responsive.getVerticalPadding(context) * 1.5),
+                  Text(
                     'Toutes les données suivantes seront définitivement supprimées :',
-                    style: TextStyle(fontSize: 14),
+                    style: TextStyle(
+                      fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14, tablet: 16),
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: Responsive.getVerticalPadding(context)),
                   _buildWarningItem('Votre compte utilisateur'),
                   _buildWarningItem('Tous vos produits (si vous êtes vendeur)'),
                   _buildWarningItem('Toutes vos commandes'),
@@ -354,7 +358,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                                 padding: const EdgeInsets.only(bottom: 4),
                                 child: Text('• $warning'),
                               ))
-                          .toList(),
+                          ,
                     ],
                   ),
                 ),
@@ -436,6 +440,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
               child: const Text('Annuler'),
             ),
           ],
+        ),
         ),
       ),
     );

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 // Importez vos fichiers de support
 import 'package:soko/api_config.dart';
 import 'package:soko/style.dart';
+import 'package:soko/utils/responsive.dart';
 import 'package:url_launcher/url_launcher.dart'; // Assurez-vous que primaryYellow et primaryDarkBlue sont définis ici
 
 // Définition de la structure de l'objet Order (pour la clarté)
@@ -452,7 +453,7 @@ class _OrdersPageState extends State<OrdersPage> {
         children: [
           // 💡 NOUVEAU : Filtre amélioré avec style moderne
           Container(
-            padding: const EdgeInsets.all(12.0),
+            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.75),
             decoration: BoxDecoration(
               color: Colors.white,
               boxShadow: [
@@ -579,9 +580,11 @@ class _OrdersPageState extends State<OrdersPage> {
                     : RefreshIndicator(
                         onRefresh: _fetchOrders,
                         color: primaryYellow,
-                        child: ListView.builder(
-                          padding: const EdgeInsets.all(12),
-                          itemCount: _orders.length,
+                        child: Responsive.centerContent(
+                          context,
+                          ListView.builder(
+                            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.75),
+                            itemCount: _orders.length,
                           itemBuilder: (context, index) {
                             final order = _orders[index];
                             final String dropdownValue =
@@ -601,7 +604,7 @@ class _OrdersPageState extends State<OrdersPage> {
                                   // Optionnel : afficher les détails
                                 },
                                 child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
+                                  padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
@@ -941,7 +944,9 @@ class _OrdersPageState extends State<OrdersPage> {
                           },
                         ),
                       ),
+                    ),
           ),
+        
         ],
       ),
     );

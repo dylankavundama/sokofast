@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soko/Profil/mes_produits.dart';
 import 'package:soko/services/user_service.dart';
+import 'package:soko/utils/responsive.dart';
 // Importez vos styles si nécessaire
 // import 'package:soko/style.dart'; 
 
@@ -388,58 +389,44 @@ class _AddProductScreenState extends State<AddProductScreen> {
         centerTitle: true,
         title: const Text("Ajouter un produit"),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // ℹ️ Instructions 
-              // Card(
-              //   color: Colors.blue.shade700,
-              //   child: const Padding(
-              //     padding: EdgeInsets.all(12),
-              //     child: Column(
-              //       crossAxisAlignment: CrossAxisAlignment.start,
-              //       children: [
-              //         Text(
-              //           "📋 Configuration requise:",
-              //           style: TextStyle(
-              //               fontWeight: FontWeight.bold, color: Colors.white),
-              //         ),
-              //         SizedBox(height: 8),
-              //         Text("1. Clés WC pour Produits/Catégories.",
-              //             style: TextStyle(color: Colors.white)),
-              //         Text("2. Mot de passe d'application pour l'Upload d'image (WP API).",
-              //             style: TextStyle(color: Colors.white)),
-              //       ],
-              //     ),
-              //   ),
-              // ),
-
-              // const SizedBox(height: 20),
-
-              // 📝 Champs de saisie
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: "Nom du produit"),
-                validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _priceController,
-                decoration: const InputDecoration(labelText: "Prix"),
-                keyboardType:
-                    const TextInputType.numberWithOptions(decimal: true),
-                validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: "Description"),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 20),
+      body: Responsive.centerContent(
+        context,
+        Padding(
+          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                // 📝 Champs de saisie
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: "Nom du produit"),
+                  validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
+                  style: TextStyle(
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  ),
+                ),
+                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(labelText: "Prix"),
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
+                  style: TextStyle(
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  ),
+                ),
+                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(labelText: "Description"),
+                  maxLines: Responsive.isMobile(context) ? 3 : 5,
+                  style: TextStyle(
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  ),
+                ),
+                SizedBox(height: Responsive.getVerticalPadding(context) * 2.5),
 
               // 🏷️ SÉLECTION DE CATÉGORIE
               const Text("Catégorie du produit :",
@@ -516,6 +503,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:soko/services.dart';
 import 'package:soko/Auth/LoginPage.dart';
 import 'package:html_unescape/html_unescape.dart';
+import 'package:soko/utils/responsive.dart';
 class CommentSection extends StatefulWidget {
   final int productId;
 
@@ -169,13 +170,15 @@ class _CommentSectionState extends State<CommentSection> {
       // appBar: AppBar(title: const Text('Commentaires')),
       body: RefreshIndicator(
         onRefresh: _refreshComments,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Comment List
-              FutureBuilder<List<Comment>>(
+        child: Responsive.centerContent(
+          context,
+          SingleChildScrollView(
+            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Comment List
+                FutureBuilder<List<Comment>>(
                 future: futureComments,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -217,17 +220,21 @@ class _CommentSectionState extends State<CommentSection> {
                     Text(
                       'Ajouter un commentaire',
                       // en tant que ${loggedInUserName!}',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 22),
+                      ),
                     ),
-                    const SizedBox(height: 10),
+                    SizedBox(height: Responsive.getVerticalPadding(context) * 1.25),
                     TextField(
                       controller: commentController,
                       decoration: InputDecoration(
                         labelText: "Votre avis",
                         border: const OutlineInputBorder(),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 14),
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: Responsive.getHorizontalPadding(context) * 0.75,
+                          vertical: Responsive.getVerticalPadding(context) * 1.75,
+                        ),
                         // --- Add clear button here ---
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.clear),
@@ -235,9 +242,12 @@ class _CommentSectionState extends State<CommentSection> {
                         ),
                         // ------------------------------
                       ),
-                      maxLines: 3,
+                      maxLines: Responsive.isMobile(context) ? 3 : 5,
+                      style: TextStyle(
+                        fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                      ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: Responsive.getVerticalPadding(context) * 2),
                     DropdownButtonFormField<int>(
                       value: rating,
                       decoration: const InputDecoration(
@@ -285,6 +295,7 @@ class _CommentSectionState extends State<CommentSection> {
                 )
             ],
           ),
+          ),
         ),
       ),
     );
@@ -301,9 +312,9 @@ class CommentCard extends StatelessWidget {
   Widget build(BuildContext context) {
    var unescape = HtmlUnescape();
     return Card(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: EdgeInsets.only(bottom: Responsive.getVerticalPadding(context) * 1.5),
       child: Padding(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.75),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -312,9 +323,9 @@ class CommentCard extends StatelessWidget {
               children: [
                 Text(
                   comment.userName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
                   ),
                 ),
                 Row(

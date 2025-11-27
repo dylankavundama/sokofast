@@ -4,6 +4,7 @@ import 'package:soko/admin/order.dart';
 
 // ⚠️ Assurez-vous que le chemin vers votre fichier de style est correct
 import 'package:soko/style.dart';
+import 'package:soko/utils/responsive.dart';
 
 class LoginLivre extends StatefulWidget {
   const LoginLivre({super.key});
@@ -57,22 +58,28 @@ class _LoginLivreState extends State<LoginLivre> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
+      body: Responsive.centerContent(
+        context,
+        SingleChildScrollView(
+          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 2),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Image.asset(
-                  'assets/liv.png'),
-              const SizedBox(height: 30),
+                'assets/liv.png',
+                height: Responsive.isMobile(context) ? 150.0 : 200.0,
+              ),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
 
               Text(
                 'Veuillez entrer votre Identifiant pour accéder aux commandes.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                style: TextStyle(
+                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  color: Colors.grey[700],
+                ),
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
 
               // Champ de saisie du Identifiant
               TextField(
@@ -93,7 +100,7 @@ class _LoginLivreState extends State<LoginLivre> {
               // Bouton de connexion
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: Responsive.getVerticalPadding(context) * 6.25,
                 child: ElevatedButton(
                   onPressed: _attemptLogin,
                   style: ElevatedButton.styleFrom(
@@ -104,12 +111,13 @@ class _LoginLivreState extends State<LoginLivre> {
                     ),
                     elevation: 5,
                   ),
-                  child: const Text(
+                  child: Text(
                     'Accéder',
                     style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50)),
+                      fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 20),
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2C3E50),
+                    ),
                   ),
                 ),
               ),

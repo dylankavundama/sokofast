@@ -14,6 +14,7 @@ import 'package:soko/comment.dart';
 import 'package:soko/order.dart';
 import 'package:soko/style.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:soko/utils/responsive.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final dynamic product;
@@ -649,35 +650,45 @@ Address: $address
                 children: [
                   // Section d'information sur le produit
                   Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product['name'] ?? 'No name',
-                          style: GoogleFonts.actor(
-                            fontSize: 22,
-                            color: Colors.black,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        // Affichage du prix majoré
-                        Text(
-                          '${price.toStringAsFixed(2)} \$', 
-                          style: GoogleFonts.actor(
-                            color: Theme.of(context).primaryColor,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        OutlinedButton.icon(
-                            icon: const Icon(Icons.add_shopping_cart),
-                            label: const Text('Ajouter au panier'),
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(double.infinity, 50),
+                    padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
+                    child: Responsive.centerContent(
+                      context,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            product['name'] ?? 'No name',
+                            style: GoogleFonts.actor(
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 22, tablet: 26, desktop: 30),
+                              color: Colors.black,
                             ),
-                            onPressed: _addToCart),
-                      ],
+                          ),
+                          SizedBox(height: Responsive.getVerticalPadding(context) * 0.5),
+                          // Affichage du prix majoré
+                          Text(
+                            '${price.toStringAsFixed(2)} \$', 
+                            style: GoogleFonts.actor(
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 20, tablet: 24),
+                              color: Theme.of(context).primaryColor,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(height: Responsive.getVerticalPadding(context) * 0.5),
+                          OutlinedButton.icon(
+                              icon: const Icon(Icons.add_shopping_cart),
+                              label: const Text('Ajouter au panier'),
+                              style: OutlinedButton.styleFrom(
+                                minimumSize: Size(
+                                  double.infinity,
+                                  Responsive.getVerticalPadding(context) * 6.25,
+                                ),
+                                padding: EdgeInsets.symmetric(
+                                  vertical: Responsive.getVerticalPadding(context) * 2,
+                                ),
+                              ),
+                              onPressed: _addToCart),
+                        ],
+                      ),
                     ),
                   ),
 
@@ -700,18 +711,20 @@ Address: $address
                       children: [
                         // Onglet Description
                         SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Description',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
+                          child: Responsive.centerContent(
+                            context,
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Description',
+                                  style: TextStyle(
+                                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 22),
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 8),
+                                SizedBox(height: Responsive.getVerticalPadding(context)),
                               product['description'] != null &&
                                       product['description']
                                           .toString()
@@ -805,11 +818,11 @@ Address: $address
                                     : GridView.builder(
                                         shrinkWrap: true,
                                         physics: const NeverScrollableScrollPhysics(),
-                                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: 2, // 2 colonnes
-                                          crossAxisSpacing: 12, // Espacement horizontal
-                                          mainAxisSpacing: 16, // Espacement vertical
-                                          childAspectRatio: 0.7, // Ratio largeur/hauteur
+                                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                          crossAxisCount: Responsive.getGridColumnCount(context),
+                                          crossAxisSpacing: Responsive.getGridSpacing(context),
+                                          mainAxisSpacing: Responsive.getGridSpacing(context) * 1.33,
+                                          childAspectRatio: Responsive.getProductAspectRatio(context),
                                         ),
                                         itemCount: _recentProducts.length,
                                         itemBuilder: (context, index) {
@@ -832,6 +845,7 @@ Address: $address
                                 const SizedBox(height: 24),
                               ],
                             ],
+                          ),
                           ),
                         ),
 

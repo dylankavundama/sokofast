@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // NOUVEL IMPORT SHIMMER
 import 'package:soko/Product/productCard.dart';
 import 'package:soko/style.dart'; // Contient 'loading' et 'primaryYellow'
+import 'package:soko/utils/responsive.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -196,12 +197,16 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       // Affichage du message d'erreur ou du mode hors ligne en haut
                       if (errorMessage.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                          padding: EdgeInsets.symmetric(
+                            vertical: Responsive.getVerticalPadding(context),
+                            horizontal: Responsive.getHorizontalPadding(context),
+                          ),
                           child: Text(
                             errorMessage,
                             style: TextStyle(
                               color: errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
                               fontWeight: FontWeight.bold,
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14),
                             ),
                             textAlign: TextAlign.center,
                           ),
@@ -219,31 +224,31 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16.0,
-                                      vertical: 12.0,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: Responsive.getHorizontalPadding(context),
+                                      vertical: Responsive.getVerticalPadding(context) * 1.5,
                                     ),
                                     child: Text(
                                       categoryName,
-                                      style: const TextStyle(
-                                        fontSize: 20,
+                                      style: TextStyle(
+                                        fontSize: Responsive.getAdaptiveFontSize(context, mobile: 20, tablet: 24, desktop: 28),
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
-                                  // 💡 NOUVEAU : Affichage vertical en grille
+                                  // 💡 RESPONSIVE : Affichage adaptatif selon la taille d'écran
                                   GridView.builder(
                                     shrinkWrap: true,
                                     physics: const NeverScrollableScrollPhysics(),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12.0,
-                                      vertical: 8.0,
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: Responsive.getHorizontalPadding(context) * 0.75,
+                                      vertical: Responsive.getVerticalPadding(context),
                                     ),
-                                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: 2, // 2 colonnes
-                                      childAspectRatio: 0.7, // Ratio largeur/hauteur
-                                      crossAxisSpacing: 12.0,
-                                      mainAxisSpacing: 12.0,
+                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                      crossAxisCount: Responsive.getGridColumnCount(context),
+                                      childAspectRatio: Responsive.getProductAspectRatio(context),
+                                      crossAxisSpacing: Responsive.getGridSpacing(context),
+                                      mainAxisSpacing: Responsive.getGridSpacing(context),
                                     ),
                                     itemCount: products.length,
                                     itemBuilder: (context, index) {
@@ -302,19 +307,19 @@ class ShimmerLoadingList extends StatelessWidget {
                   ),
                 ),
                 
-                // 💡 NOUVEAU : Simuler la Grille Verticale
+                // 💡 RESPONSIVE : Simuler la Grille Verticale adaptative
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                  padding: EdgeInsets.symmetric(horizontal: Responsive.getHorizontalPadding(context) * 0.75),
                   child: GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.7,
-                      crossAxisSpacing: 12.0,
-                      mainAxisSpacing: 12.0,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: Responsive.getGridColumnCount(context),
+                      childAspectRatio: Responsive.getProductAspectRatio(context),
+                      crossAxisSpacing: Responsive.getGridSpacing(context),
+                      mainAxisSpacing: Responsive.getGridSpacing(context),
                     ),
-                    itemCount: 4, // Simule 4 produits par catégorie
+                    itemCount: Responsive.getGridColumnCount(context) * 2, // Simule des produits selon le nombre de colonnes
                     itemBuilder: (context, index) {
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

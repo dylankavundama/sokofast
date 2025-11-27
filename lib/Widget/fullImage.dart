@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'package:soko/utils/responsive.dart';
 
 class FullScreenImagePage extends StatelessWidget {
   final String imageUrl;

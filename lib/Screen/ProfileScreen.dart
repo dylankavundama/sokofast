@@ -11,6 +11,7 @@ import 'package:soko/services/user_service.dart';
 import 'package:soko/style.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:soko/Profil/delete_account_screen.dart';
+import 'package:soko/utils/responsive.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -98,13 +99,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
         _loadUserData();
       } else {
-        // 2. Si l'utilisateur est déconnecté, on le redirige explicitement.
-        // pushAndRemoveUntil empêche le retour en arrière.
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (context) => LoginPage()),
-          (Route<dynamic> route) => false,
-        );
+        // 💡 MODIFIÉ : Ne plus rediriger automatiquement, permettre l'accès en mode invité
+        // L'utilisateur peut rester sur la page de profil en mode invité
+        if (mounted) {
+          setState(() {
+            _isLoadingStatus = false;
+            _username = 'Invité';
+            loggedInUserName = null;
+            _isVendeur = false;
+            _isLivreur = false;
+          });
+        }
       }
     });
   }
@@ -454,10 +459,99 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
     }
 
-    // Si l'utilisateur n'est pas connecté, cela affichera un container vide.
-    // La navigation vers la page de connexion se fait via l'écouteur d'état.
+    // 💡 MODIFIÉ : Afficher une interface invité si l'utilisateur n'est pas connecté
     if (_user == null) {
-      return Scaffold(body: Container());
+      return Scaffold(
+        appBar: AppBar(
+          backgroundColor: backdColor,
+          centerTitle: true,
+          title: const Text(
+            'Mon Profil',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+        body: Responsive.centerContent(
+          context,
+          Padding(
+            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 1.875),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+              // Icône d'invité
+              CircleAvatar(
+                radius: Responsive.isMobile(context) ? 60.0 : 80.0,
+                backgroundColor: backdColor,
+                child: Icon(
+                  Icons.person_outline,
+                  size: Responsive.isMobile(context) ? 70.0 : 90.0,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 3),
+              Text(
+                'Mode Invité',
+                style: TextStyle(
+                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 24, tablet: 28, desktop: 32),
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 1.5),
+              Text(
+                'Connectez-vous pour accéder à toutes les fonctionnalités',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  color: Colors.grey[600],
+                ),
+              ),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 5),
+              // Bouton de connexion
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginPage()),
+                  );
+                },
+                icon: const Icon(Icons.login, color: Colors.white),
+                label: Text(
+                  'Se connecter',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 20),
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: backdColor,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: Responsive.getHorizontalPadding(context) * 2,
+                    vertical: Responsive.getVerticalPadding(context) * 2,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              const Divider(),
+              const SizedBox(height: 20),
+              // Options disponibles en mode invité
+              ListTile(
+                leading: const Icon(Icons.shopping_bag),
+                title: const Text('Mon Panier'),
+                onTap: _panier,
+              ),
+              ListTile(
+                leading: const Icon(Icons.support_agent),
+                title: const Text('Service Client'),
+                onTap: _showCustomerServiceDialog,
+              ),
+            ],
+          ),
+          ),
+        ),
+      );
     }
 
     return Scaffold(
@@ -477,9 +571,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(30),
-        child: ListView(
+      body: Responsive.centerContent(
+        context,
+        Padding(
+          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 1.875),
+          child: ListView(
           children: [
             // 💡 NOUVEAU : Carte de profil avec icône de certification
             Card(
@@ -751,6 +847,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             //       fit: BoxFit.cover),
             // )
           ],
+        ),
         ),
       ),
     );

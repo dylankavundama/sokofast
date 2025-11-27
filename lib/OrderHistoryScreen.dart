@@ -7,6 +7,9 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:soko/services.dart'; // Assurez-vous que ce fichier contient `baseUrl`
 import 'package:url_launcher/url_launcher.dart';
+import 'package:soko/utils/responsive.dart';
+import 'package:soko/Auth/loginPage.dart';
+import 'package:soko/style.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -37,10 +40,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.displayName == null) {
-      // Si l'utilisateur n'est pas connecté ou n'a pas de nom d'affichage
+      // 💡 MODIFIÉ : Ne plus bloquer, permettre l'accès en mode invité
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Vous devez être connecté pour voir vos commandes.';
+        _errorMessage = null; // Pas d'erreur, juste mode invité
+        orders = []; // Liste vide pour les invités
       });
       return;
     }
@@ -141,30 +145,92 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _errorMessage != null
+          : (loggedInUserName == null)
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, size: 50, color: Colors.red),
-                      const SizedBox(height: 20),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          _errorMessage!,
-                          style: const TextStyle(fontSize: 16, color: Colors.red),
+                  // 💡 NOUVEAU : Interface invité avec bouton de connexion
+                  child: Responsive.centerContent(
+                    context,
+                    Padding(
+                      padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 1.875),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_bag_outlined,
+                            size: Responsive.isMobile(context) ? 80.0 : 100.0,
+                            color: Colors.grey[400],
+                          ),
+                          SizedBox(height: Responsive.getVerticalPadding(context) * 3),
+                          Text(
+                            'Mode Invité',
+                            style: TextStyle(
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 24, tablet: 28, desktop: 32),
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          SizedBox(height: Responsive.getVerticalPadding(context) * 1.5),
+                        Text(
+                          'Connectez-vous pour voir l\'historique de vos commandes',
                           textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      ElevatedButton(
-                        onPressed: _initializeAndFetchOrders,
-                        child: const Text('Réessayer'),
-                      ),
-                    ],
+                        const SizedBox(height: 40),
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => LoginPage()),
+                            );
+                          },
+                          icon: const Icon(Icons.login, color: Colors.white),
+                          label: const Text(
+                            'Se connecter',
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: backdColor,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 32,
+                              vertical: 16,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   ),
                 )
-              : orders.isEmpty
+              : _errorMessage != null
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                          const SizedBox(height: 20),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(fontSize: 16, color: Colors.red),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          ElevatedButton(
+                            onPressed: _initializeAndFetchOrders,
+                            child: const Text('Réessayer'),
+                          ),
+                        ],
+                      ),
+                    )
+                  : orders.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -185,9 +251,11 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _fetchOrdersFromApi,
-                      child: ListView.builder(
-                        padding: const EdgeInsets.all(10),
-                        itemCount: orders.length,
+                      child: Responsive.centerContent(
+                        context,
+                        ListView.builder(
+                          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
+                          itemCount: orders.length,
                         itemBuilder: (context, index) {
                           final order = orders[index];
                           final date = DateTime.parse(order['order_date']);
@@ -311,6 +379,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             ),
                           );
                         },
+                      ),
                       ),
                     ),
     );

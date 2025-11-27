@@ -553,14 +553,14 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:soko/Screen/bottonNav.dart';
-import 'package:soko/style.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
+import 'package:soko/utils/responsive.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -849,44 +849,49 @@ class _LoginPageState extends State<LoginPage> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Section de l'en-tête (Logo et titre)
-                Column(
-                  children: [
-                    Image.asset(
-                      'assets/icon.png',
-                      height: 120,
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Bienvenue',
-                      style: GoogleFonts.actor(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.blue.shade900,
+        child: Responsive.centerContent(
+          context,
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.getHorizontalPadding(context) * 1.5,
+                vertical: Responsive.getVerticalPadding(context) * 6,
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Section de l'en-tête (Logo et titre)
+                  Column(
+                    children: [
+                      Image.asset(
+                        'assets/icon.png',
+                        height: Responsive.isMobile(context) ? 120.0 : 150.0,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Connectez-vous pour continuer',
-                      style: GoogleFonts.abel(
-                        fontSize: 18,
-                        color: Colors.blue.shade700,
+                      SizedBox(height: Responsive.getVerticalPadding(context) * 2),
+                      Text(
+                        'Bienvenue',
+                        style: GoogleFonts.actor(
+                          fontSize: Responsive.getAdaptiveFontSize(context, mobile: 32, tablet: 40, desktop: 48),
+                          fontWeight: FontWeight.w700,
+                          color: Colors.blue.shade900,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
+                      SizedBox(height: Responsive.getVerticalPadding(context) * 0.5),
+                      Text(
+                        'Connectez-vous pour continuer',
+                        style: GoogleFonts.abel(
+                          fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 22),
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
 
-                // Conteneur de connexion
-                Padding(
-                  padding: const EdgeInsets.all(32),
+                  // Conteneur de connexion
+                  Padding(
+                    padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 2),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -946,7 +951,9 @@ class _LoginPageState extends State<LoginPage> {
                           style: ElevatedButton.styleFrom(
                             foregroundColor: Colors.black87,
                             backgroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: EdgeInsets.symmetric(
+                              vertical: Responsive.getVerticalPadding(context) * 2,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(color: Colors.grey.shade300),
@@ -955,13 +962,13 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           icon: Image.asset(
                             'assets/google.png',
-                            height: 24,
+                            height: Responsive.isMobile(context) ? 24.0 : 28.0,
                           ),
                           label: _isLoading
-                              ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
+                              ? SizedBox(
+                            height: Responsive.isMobile(context) ? 24.0 : 28.0,
+                            width: Responsive.isMobile(context) ? 24.0 : 28.0,
+                            child: const CircularProgressIndicator(
                               strokeWidth: 2,
                               color: Colors.blue,
                             ),
@@ -969,14 +976,44 @@ class _LoginPageState extends State<LoginPage> {
                               : Text(
                             'Se connecter avec Google',
                             style: GoogleFonts.aBeeZee(
-                              fontSize: 16,
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 20),
+                      // Séparateur "OU"
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                thickness: 1,
+                                color: Colors.grey[300],
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                'OU',
+                                style: GoogleFonts.abel(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                thickness: 1,
+                                color: Colors.grey[300],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
 
                       //Boutton de connexion avec Apple
                       SizedBox(
@@ -986,7 +1023,9 @@ class _LoginPageState extends State<LoginPage> {
                           style: ElevatedButton.styleFrom(
                             foregroundColor: Colors.black87,
                             backgroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: EdgeInsets.symmetric(
+                              vertical: Responsive.getVerticalPadding(context) * 2,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: BorderSide(color: Colors.grey.shade300),
@@ -995,13 +1034,13 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           icon: Image.asset(
                             'assets/apple.png',
-                            height: 24,
+                            height: Responsive.isMobile(context) ? 24.0 : 28.0,
                           ),
                           label: _isAppleLoading
-                              ? const SizedBox(
-                            height: 24,
-                            width: 24,
-                            child: CircularProgressIndicator(
+                              ? SizedBox(
+                            height: Responsive.isMobile(context) ? 24.0 : 28.0,
+                            width: Responsive.isMobile(context) ? 24.0 : 28.0,
+                            child: const CircularProgressIndicator(
                               strokeWidth: 2,
                               color: Colors.blue,
                             ),
@@ -1009,7 +1048,7 @@ class _LoginPageState extends State<LoginPage> {
                               : Text(
                             'Se connecter avec Apple',
                             style: GoogleFonts.aBeeZee(
-                              fontSize: 16,
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1040,10 +1079,37 @@ class _LoginPageState extends State<LoginPage> {
                           ],
                         ),
                       ),
+
+                      // Bouton "Sauter"
+                      const SizedBox(height: 24),
+                      TextButton(
+                        onPressed: () {
+                          if (mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(builder: (_) => BottomNavExample()),
+                            );
+                          }
+                        },
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(
+                            vertical: Responsive.getVerticalPadding(context) * 1.5,
+                          ),
+                        ),
+                        child: Text(
+                          'Sauter',
+                          style: GoogleFonts.abel(
+                            fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                            fontWeight: FontWeight.w600,
+                            color: Colors.blue.shade700,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ),

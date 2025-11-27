@@ -6,6 +6,7 @@ import 'category_item.dart';
 import 'products_by_category_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // Importation nécessaire pour Shimmer
+import 'package:soko/utils/responsive.dart';
 
 // Clé de cache pour les catégories
 const String _categoriesCacheKey = 'cachedCategoriesData';
@@ -120,12 +121,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
             // Affichage du message d'erreur ou d'avertissement hors ligne
             if (_errorMessage.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                padding: EdgeInsets.symmetric(
+                  vertical: Responsive.getVerticalPadding(context),
+                  horizontal: Responsive.getHorizontalPadding(context),
+                ),
                 child: Text(
                   _errorMessage,
                   style: TextStyle(
                     color: _errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
                     fontWeight: FontWeight.bold,
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -138,12 +143,12 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   : _categories.isEmpty && _errorMessage.isEmpty
                       ? const Center(child: Text('Aucune catégorie disponible.'))
                       : GridView.builder(
-                            padding: const EdgeInsets.all(10),
-                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 10,
-                              mainAxisSpacing: 10,
-                              childAspectRatio: 0.8,
+                            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
+                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: Responsive.getCategoryColumnCount(context),
+                              crossAxisSpacing: Responsive.getGridSpacing(context),
+                              mainAxisSpacing: Responsive.getGridSpacing(context),
+                              childAspectRatio: Responsive.getCategoryAspectRatio(context),
                             ),
                             itemCount: _categories.length,
                             itemBuilder: (context, index) {
@@ -190,15 +195,15 @@ class ShimmerCategoryGrid extends StatelessWidget {
       baseColor: baseColor,
       highlightColor: highlightColor,
       child: GridView.builder(
-        padding: const EdgeInsets.all(10),
+        padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
         physics: const NeverScrollableScrollPhysics(), // Empêche le défilement
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 10,
-          mainAxisSpacing: 10,
-          childAspectRatio: 0.8,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: Responsive.getCategoryColumnCount(context),
+          crossAxisSpacing: Responsive.getGridSpacing(context),
+          mainAxisSpacing: Responsive.getGridSpacing(context),
+          childAspectRatio: Responsive.getCategoryAspectRatio(context),
         ),
-        itemCount: 6, // Simule un nombre fixe de catégories
+        itemCount: Responsive.getCategoryColumnCount(context) * 3, // Simule des catégories selon le nombre de colonnes
         itemBuilder: (context, index) {
           return Container(
             decoration: BoxDecoration(

@@ -10,10 +10,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart'; // 💡 NOUVEL IMPORT
+import 'package:soko/utils/responsive.dart';
 
 // Importez vos fichiers de support
 import 'package:soko/OrderHistoryScreen.dart';
 import 'package:soko/style.dart';
+import 'package:soko/Auth/loginPage.dart';
 
 class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
@@ -212,8 +214,24 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _initiateFlexPayTransaction(BuildContext context) async {
+    // 💡 Vérification supplémentaire de l'authentification
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.displayName == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Vous devez être connecté pour passer une commande'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LoginPage()),
+      );
+      return;
+    }
+    
     final address = addressController.text;
-    final name = loggedInUserName!;
+    final name = user.displayName ?? loggedInUserName ?? 'Client';
     final clientPhoneNumber = phoneController.text.trim();
 
     if (!_validatePhoneNumber(clientPhoneNumber)) {
@@ -473,6 +491,22 @@ class _CartScreenState extends State<CartScreen> {
   static const double _SERVICE_FEE_RATE = 0.30; // 30% de supplément (frais de service/livraison)
 
  void _orderViaWhatsApp(BuildContext context) async {
+  // 💡 Vérification supplémentaire de l'authentification
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null || user.displayName == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Vous devez être connecté pour passer une commande'),
+        backgroundColor: Colors.red,
+      ),
+    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => LoginPage()),
+    );
+    return;
+  }
+  
   final address = addressController.text;
 
   // 1. Calcul du montant total de BASE (prix des produits uniquement)
@@ -548,11 +582,11 @@ class _CartScreenState extends State<CartScreen> {
   final url = Uri.parse(
       'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
 
-  try {
-    final orderResult = await sendOrderToDatabase(
-      context: context,
-      name: loggedInUserName!,
-      address: address,
+    try {
+      final orderResult = await sendOrderToDatabase(
+        context: context,
+        name: user.displayName ?? loggedInUserName ?? 'Client',
+        address: address,
       transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
       products: cartItems,
       // ENVOI du total final (avec 30%) pour l'enregistrement local
@@ -584,9 +618,51 @@ class _CartScreenState extends State<CartScreen> {
   // MISE À JOUR DE LA BOÎTE DE DIALOGUE
   // ------------------------------------------------------------------
   void _showAddressDialog(VoidCallback onConfirm) {
-    if (cartItems.isEmpty ||
-        loggedInUserName == null ||
-        loggedInUserName!.isEmpty) return;
+    if (cartItems.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Votre panier est vide')),
+      );
+      return;
+    }
+    
+    // 💡 NOUVEAU : Vérifier l'authentification avant de passer commande
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || user.displayName == null) {
+      // Rediriger vers la page de connexion
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Connexion requise'),
+          content: const Text(
+            'Vous devez vous connecter pour passer une commande. Souhaitez-vous vous connecter maintenant ?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => LoginPage()),
+                );
+              },
+              child: const Text('Se connecter'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+    
+    // Mettre à jour le nom de l'utilisateur si nécessaire
+    if (loggedInUserName == null || loggedInUserName!.isEmpty) {
+      setState(() {
+        loggedInUserName = user.displayName;
+      });
+    }
 
     // Mise à jour de l'état pour les coordonnées
     final String locationStatus = _isLocating
@@ -798,20 +874,27 @@ class _CartScreenState extends State<CartScreen> {
                         final price =
                             double.tryParse(product['price'].toString()) ?? 0;
 
+                        final imageSize = Responsive.isMobile(context) ? 50.0 : 70.0;
                         return ListTile(
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: Responsive.getHorizontalPadding(context),
+                            vertical: Responsive.getVerticalPadding(context) * 0.5,
+                          ),
                           leading: product['images'] != null &&
                                   product['images'].isNotEmpty
                               ? Image.network(
                                   product['images'][0]['src'],
-                                  width: 50,
-                                  height: 50,
+                                  width: imageSize,
+                                  height: imageSize,
                                   fit: BoxFit.cover,
                                 )
-                              : const Icon(Icons.image),
+                              : Icon(Icons.image, size: imageSize),
                           title: Text(
                             product['name'],
                             maxLines: 2,
-                            style: GoogleFonts.abel(),
+                            style: GoogleFonts.abel(
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14, tablet: 16),
+                            ),
                           ),
                           subtitle: Text(
                             // Calcule le prix unitaire ajusté: price * 1.30
@@ -837,7 +920,7 @@ class _CartScreenState extends State<CartScreen> {
           ),
           if (cartItems.isNotEmpty)
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [
@@ -882,9 +965,12 @@ class _CartScreenState extends State<CartScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             'Tout frais inclus',
-                            style: TextStyle(fontSize: 16, color: Colors.red),
+                            style: TextStyle(
+                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                              color: Colors.red,
+                            ),
                           ),
                         
                         ],
@@ -896,51 +982,97 @@ class _CartScreenState extends State<CartScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Total Final:',
+                          Text('Total Final:',
                               style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 20),
+                                  fontWeight: FontWeight.bold)),
                           Text(
                               '${tottalAmount.toStringAsFixed(2)}+ \$', // Montant avec les 30%
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
+                              style: TextStyle(
+                                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 20),
+                                  fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.telegram,
-                              size: 19, color: Colors.white),
-                          label: const Text('WhatsApp',
-                              style: TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          onPressed: () => _showAddressDialog(
-                              () => _orderViaWhatsApp(context)),
+                  SizedBox(height: Responsive.getVerticalPadding(context) * 2),
+                  Responsive.isMobile(context)
+                      ? Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.telegram,
+                                    size: 19, color: Colors.white),
+                                label: const Text('WhatsApp',
+                                    style: TextStyle(color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: Responsive.getVerticalPadding(context) * 1.75,
+                                  ),
+                                ),
+                                onPressed: () => _showAddressDialog(
+                                    () => _orderViaWhatsApp(context)),
+                              ),
+                            ),
+                            SizedBox(height: Responsive.getVerticalPadding(context)),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.mobile_friendly,
+                                    color: Colors.white),
+                                label: const Text('Mobile Money',
+                                    style: TextStyle(color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: Responsive.getVerticalPadding(context) * 1.75,
+                                  ),
+                                ),
+                                onPressed: () => _showAddressDialog(
+                                    () => _initiateFlexPayTransaction(context)),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.telegram,
+                                    size: 19, color: Colors.white),
+                                label: const Text('WhatsApp',
+                                    style: TextStyle(color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: Responsive.getVerticalPadding(context) * 1.75,
+                                  ),
+                                ),
+                                onPressed: () => _showAddressDialog(
+                                    () => _orderViaWhatsApp(context)),
+                              ),
+                            ),
+                            SizedBox(width: Responsive.getHorizontalPadding(context) * 0.625),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.mobile_friendly,
+                                    color: Colors.white),
+                                label: const Text('Mobile Money',
+                                    style: TextStyle(color: Colors.white)),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange,
+                                  padding: EdgeInsets.symmetric(
+                                    vertical: Responsive.getVerticalPadding(context) * 1.75,
+                                  ),
+                                ),
+                                onPressed: () => _showAddressDialog(
+                                    () => _initiateFlexPayTransaction(context)),
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.mobile_friendly,
-                              color: Colors.white),
-                          label: const Text('Mobile Money',
-                              style: TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          onPressed: () => _showAddressDialog(
-                              () => _initiateFlexPayTransaction(context)),
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),

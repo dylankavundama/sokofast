@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:soko/api_config.dart';
 import 'package:soko/style.dart';
 import 'package:url_launcher/url_launcher.dart'; // Assurez-vous que primaryYellow et primaryDarkBlue sont définis ici
+import 'package:soko/utils/responsive.dart';
 
 // Définition de la structure de l'objet Order (pour la clarté)
 class Order {
@@ -304,7 +305,7 @@ class _OrdersPageState extends State<OrdersPage> {
         children: [
           // Filtre de Statut (Fonctionne pour le triage)
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.5),
             child: DropdownButtonFormField<String>(
               decoration: const InputDecoration(
                 labelText: 'Filtrer par Statut',
@@ -331,23 +332,27 @@ class _OrdersPageState extends State<OrdersPage> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : ListView.builder(
-                    itemCount: _orders.length,
-                    itemBuilder: (context, index) {
-                      final order = _orders[index];
+                : Responsive.centerContent(
+                    context,
+                    ListView.builder(
+                      itemCount: _orders.length,
+                      itemBuilder: (context, index) {
+                        final order = _orders[index];
 
-                      // Détermine la valeur initiale du Dropdown pour la modification
-                      // C'EST LA CORRECTION CLÉ POUR ÉVITER LE CRASH.
-                      final String dropdownValue =
-                          _updatableStatuses.contains(order.status)
-                              ? order.status
-                              : 'EN COURS'; // Valeur de secours valide
+                        // Détermine la valeur initiale du Dropdown pour la modification
+                        // C'EST LA CORRECTION CLÉ POUR ÉVITER LE CRASH.
+                        final String dropdownValue =
+                            _updatableStatuses.contains(order.status)
+                                ? order.status
+                                : 'EN COURS'; // Valeur de secours valide
 
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 10),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12.0),
+                        return Card(
+                          margin: EdgeInsets.symmetric(
+                            vertical: Responsive.getVerticalPadding(context),
+                            horizontal: Responsive.getHorizontalPadding(context) * 0.625,
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.75),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -442,7 +447,8 @@ class _OrdersPageState extends State<OrdersPage> {
                           ),
                         ),
                       );
-                    },
+                      },
+                    ),
                   ),
           ),
         ],

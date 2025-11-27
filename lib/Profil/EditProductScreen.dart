@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:soko/utils/responsive.dart';
 // Importez vos autres dépendances (constantes, ProductCategory, etc.)
 
 // ⚠️ NOUVEL ÉCRAN DE MODIFICATION
@@ -129,52 +130,69 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("Modifier : ${widget.product['name'] ?? 'Produit'}"),),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              // ➡️ Champ Nom
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: "Nom du produit"),
-                validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
-              ),
-              const SizedBox(height: 16),
-              
-              // ➡️ Champ Prix
-              TextFormField(
-                controller: _priceController,
-                decoration: const InputDecoration(labelText: "Prix"),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
-              ),
-              const SizedBox(height: 16),
-              
-              // ➡️ Champ Description
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: "Description"),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 30),
-              
-              // ➡️ Bouton de Sauvegarde
-              ElevatedButton(
-                onPressed: _isUpdating ? null : _handleUpdate,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding: const EdgeInsets.symmetric(vertical: 15),
+      body: Responsive.centerContent(
+        context,
+        Padding(
+          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
+          child: Form(
+            key: _formKey,
+            child: ListView(
+              children: [
+                // ➡️ Champ Nom
+                TextFormField(
+                  controller: _nameController,
+                  decoration: const InputDecoration(labelText: "Nom du produit"),
+                  validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
+                  style: TextStyle(
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  ),
                 ),
-                child: _isUpdating
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Sauvegarder les modifications",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
-                      ),
-              ),
-            ],
+                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
+                
+                // ➡️ Champ Prix
+                TextFormField(
+                  controller: _priceController,
+                  decoration: const InputDecoration(labelText: "Prix"),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
+                  style: TextStyle(
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  ),
+                ),
+                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
+                
+                // ➡️ Champ Description
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(labelText: "Description"),
+                  maxLines: Responsive.isMobile(context) ? 3 : 5,
+                  style: TextStyle(
+                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  ),
+                ),
+                SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
+                
+                // ➡️ Bouton de Sauvegarde
+                ElevatedButton(
+                  onPressed: _isUpdating ? null : _handleUpdate,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    padding: EdgeInsets.symmetric(
+                      vertical: Responsive.getVerticalPadding(context) * 1.875,
+                    ),
+                  ),
+                  child: _isUpdating
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : Text(
+                          "Sauvegarder les modifications",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                          ),
+                        ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

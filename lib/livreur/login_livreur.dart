@@ -4,6 +4,7 @@ import 'package:soko/livreur/order.dart';
 import 'package:soko/services/user_service.dart';
 // ⚠️ Assurez-vous que le chemin vers votre fichier de style est correct
 import 'package:soko/style.dart';
+import 'package:soko/utils/responsive.dart';
 
 class LoginLivre extends StatefulWidget {
   const LoginLivre({super.key});
@@ -86,36 +87,46 @@ class _LoginLivreState extends State<LoginLivre> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
+      body: Responsive.centerContent(
+        context,
+        SingleChildScrollView(
+          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 2),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Image.asset(
-                  'assets/liv.png'),
-              const SizedBox(height: 30),
+                'assets/liv.png',
+                height: Responsive.isMobile(context) ? 150.0 : 200.0,
+              ),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
 
               Text(
                 'Vérification de votre statut de livreur...',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                style: TextStyle(
+                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
+                  color: Colors.grey[700],
+                ),
               ),
-              const SizedBox(height: 30),
+              SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
 
               // 💡 NOUVEAU : Afficher l'email de l'utilisateur connecté
               if (FirebaseAuth.instance.currentUser != null)
                 Card(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
                     child: Column(
                       children: [
-                        Icon(Icons.person, size: 48, color: backdColor),
-                        const SizedBox(height: 8),
+                        Icon(
+                          Icons.person,
+                          size: Responsive.isMobile(context) ? 48.0 : 64.0,
+                          color: backdColor,
+                        ),
+                        SizedBox(height: Responsive.getVerticalPadding(context)),
                         Text(
                           FirebaseAuth.instance.currentUser!.email ?? 'Utilisateur',
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -148,19 +159,26 @@ class _LoginLivreState extends State<LoginLivre> {
               // 💡 NOUVEAU : Message informatif
               if (!_isLoading && _errorMessage == null)
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
                   child: Card(
                     color: Colors.blue[50],
                     child: Padding(
-                      padding: const EdgeInsets.all(12.0),
+                      padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.75),
                       child: Row(
                         children: [
-                          Icon(Icons.info_outline, color: Colors.blue[700]),
-                          const SizedBox(width: 12),
+                          Icon(
+                            Icons.info_outline,
+                            color: Colors.blue[700],
+                            size: Responsive.isMobile(context) ? 24.0 : 28.0,
+                          ),
+                          SizedBox(width: Responsive.getHorizontalPadding(context) * 0.75),
                           Expanded(
                             child: Text(
                               'Vérification automatique en cours...',
-                              style: TextStyle(color: Colors.blue[900]),
+                              style: TextStyle(
+                                color: Colors.blue[900],
+                                fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14, tablet: 16),
+                              ),
                             ),
                           ),
                         ],

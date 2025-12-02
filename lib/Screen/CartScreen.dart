@@ -606,9 +606,9 @@ class _CartScreenState extends State<CartScreen> {
     buffer.write('\nCoordonnées GPS: Non disponibles (adresse texte utilisée)');
   }
   // --------------------------------------------------------------------
-
+//go00000000000000000
   // Assurez-vous que ce numéro est celui de l'administrateur/livreur
-  const phone = '243992959898';
+  const phone = '243893774961';
   final url = Uri.parse(
       'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
 

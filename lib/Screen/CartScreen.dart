@@ -71,7 +71,9 @@ class _CartScreenState extends State<CartScreen> {
   Future<void> _loadLoggedInUser() async {
     final user = FirebaseAuth.instance.currentUser;
     setState(() {
-      loggedInUserName = user?.displayName;
+      // Utiliser displayName, email (sans @domain), ou null comme fallback
+      loggedInUserName = user?.displayName ?? 
+                        (user?.email != null ? user!.email!.split('@')[0] : null);
     });
   }
 
@@ -214,9 +216,9 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   Future<void> _initiateFlexPayTransaction(BuildContext context) async {
-    // 💡 Vérification supplémentaire de l'authentification
+    // 💡 Vérification de l'authentification (corrigée pour iPadOS)
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.displayName == null) {
+    if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Vous devez être connecté pour passer une commande'),
@@ -230,8 +232,34 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
     
+    // Recharger le token si nécessaire (pour iPadOS)
+    try {
+      await user.reload();
+      final refreshedUser = FirebaseAuth.instance.currentUser;
+      if (refreshedUser == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Session expirée. Veuillez vous reconnecter.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => LoginPage()),
+        );
+        return;
+      }
+    } catch (e) {
+      print('Erreur lors du rechargement de l\'utilisateur: $e');
+      // Continuer avec l'utilisateur actuel si le rechargement échoue
+    }
+    
     final address = addressController.text;
-    final name = user.displayName ?? loggedInUserName ?? 'Client';
+    // Utiliser displayName, email (sans @domain), ou "Client" comme fallback
+    final name = user.displayName ?? 
+                 (user.email != null ? user.email!.split('@')[0] : null) ?? 
+                 loggedInUserName ?? 
+                 'Client';
     final clientPhoneNumber = phoneController.text.trim();
 
     if (!_validatePhoneNumber(clientPhoneNumber)) {
@@ -327,9 +355,15 @@ class _CartScreenState extends State<CartScreen> {
 
       if (code == '0') {
         // 3. Enregistrer la commande
+        // Obtenir le nom avec fallback pour compatibilité iPadOS
+        final refreshedUser = FirebaseAuth.instance.currentUser;
+        final userName = refreshedUser?.displayName ?? 
+                        (refreshedUser?.email != null ? refreshedUser!.email!.split('@')[0] : null) ?? 
+                        name;
+        
         final orderResult = await sendOrderToDatabase(
             context: context,
-            name: name,
+            name: userName,
             address: address,
             transactionId: referenceId,
             products: cartItems,
@@ -521,9 +555,9 @@ class _CartScreenState extends State<CartScreen> {
   static const double _SERVICE_FEE_RATE = 0.30; // 30% de supplément (frais de service/livraison)
 
  void _orderViaWhatsApp(BuildContext context) async {
-  // 💡 Vérification supplémentaire de l'authentification
+  // 💡 Vérification de l'authentification (corrigée pour iPadOS)
   final user = FirebaseAuth.instance.currentUser;
-  if (user == null || user.displayName == null) {
+  if (user == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Vous devez être connecté pour passer une commande'),
@@ -535,6 +569,28 @@ class _CartScreenState extends State<CartScreen> {
       MaterialPageRoute(builder: (_) => LoginPage()),
     );
     return;
+  }
+  
+  // Recharger le token si nécessaire (pour iPadOS)
+  try {
+    await user.reload();
+    final refreshedUser = FirebaseAuth.instance.currentUser;
+    if (refreshedUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Session expirée. Veuillez vous reconnecter.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LoginPage()),
+      );
+      return;
+    }
+  } catch (e) {
+    print('Erreur lors du rechargement de l\'utilisateur: $e');
+    // Continuer avec l'utilisateur actuel si le rechargement échoue
   }
   
   final address = addressController.text;
@@ -613,9 +669,15 @@ class _CartScreenState extends State<CartScreen> {
       'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
 
     try {
+      // Obtenir le nom avec fallback pour compatibilité iPadOS
+      final userName = user.displayName ?? 
+                      (user.email != null ? user.email!.split('@')[0] : null) ?? 
+                      loggedInUserName ?? 
+                      'Client';
+      
       final orderResult = await sendOrderToDatabase(
         context: context,
-        name: user.displayName ?? loggedInUserName ?? 'Client',
+        name: userName,
         address: address,
       transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
       products: cartItems,
@@ -655,9 +717,9 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
     
-    // 💡 NOUVEAU : Vérifier l'authentification avant de passer commande
+    // 💡 Vérification de l'authentification (corrigée pour iPadOS)
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null || user.displayName == null) {
+    if (user == null) {
       // Rediriger vers la page de connexion
       showDialog(
         context: context,
@@ -687,10 +749,17 @@ class _CartScreenState extends State<CartScreen> {
       return;
     }
     
-    // Mettre à jour le nom de l'utilisateur si nécessaire
+    // Recharger le token si nécessaire (pour iPadOS) - de manière asynchrone sans bloquer
+    user.reload().catchError((e) {
+      print('Erreur lors du rechargement de l\'utilisateur: $e');
+    });
+    
+    // Mettre à jour le nom de l'utilisateur si nécessaire (avec fallback)
     if (loggedInUserName == null || loggedInUserName!.isEmpty) {
       setState(() {
-        loggedInUserName = user.displayName;
+        loggedInUserName = user.displayName ?? 
+                          (user.email != null ? user.email!.split('@')[0] : null) ?? 
+                          'Client';
       });
     }
 

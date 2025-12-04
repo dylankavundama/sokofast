@@ -27,9 +27,9 @@
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 		<key>NSCameraUsageDescription</key>
-		<string>to take user profile image or scan qr code</string>
+		<string>Nous avons besoin d'accéder à votre caméra pour prendre une photo de profil ou scanner un code QR.</string>
 		<key>NSPhotoLibraryUsageDescription</key>
-		<string>to choose user profile image or scan qr code</string>
+		<string>Nous avons besoin d'accéder à votre bibliothèque photo pour sélectionner une image de profil ou une photo.</string>
 		<key>UIApplicationSupportsIndirectInputEvents</key>
 		<true/>
 		<key>UILaunchStoryboardName</key>
@@ -63,7 +63,9 @@
 			</dict>
 		</array>
 		<key>NSLocationWhenInUseUsageDescription</key>
-		<string>We use your location to display localized content and improve the experience.</string>
+		<string>Nous utilisons votre localisation pour déterminer votre adresse de livraison et faciliter le processus de commande. Votre position GPS nous permet d'assigner le livreur le plus proche et d'améliorer la précision de la livraison.</string>
+		<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+		<string>Nous utilisons votre localisation pour déterminer votre adresse de livraison et faciliter le processus de commande. Votre position GPS nous permet d'assigner le livreur le plus proche et d'améliorer la précision de la livraison.</string>
 		<key>UIStatusBarHidden</key>
 		<false/>
 	</dict>

@@ -3,7 +3,7 @@ description: Application des ventes en ligne.
 # description: A new Flutter project.
 publish_to: "none"
 
-version: 2.2.0+27
+version: 2.2.0+29
 
 environment:
   sdk: ">=3.5.0 <4.2.0"
@@ -51,23 +51,11 @@ dev_dependencies:
 #  rename_app: ^1.6.1
 #  dart_code_metrics: 5.7.6
 
-flutter_icons:
-  android: "launcher_icon"
-  ios: true
-  remove_alpha_ios: true
-  image_path: "assets/logo.png"
-
-flutter_native_splash:
-  # Cette option génère un splash screen natif pour Android et iOS
-  color: "#FFFFFF"
-  image: assets/icon.png
-  # android: true
-  # ios: true
-  # web: false
-  # remove: false
-  # android_12: true
-  # android_gravity: center
-  # ios_content_mode: center
+#flutter_icons:
+#  android: "launcher_icon"
+#  ios: true
+#  remove_alpha_ios: true
+#  image_path: "assets/icon.png"
 
 # flutter_gen:
 #   output: lib/custom_assets/ # Optional (default: lib/gen/)

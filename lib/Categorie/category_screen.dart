@@ -1,12 +1,18 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:soko/style.dart';
-import 'dart:convert';
-import 'category_item.dart';
-import 'products_by_category_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // Importation nécessaire pour Shimmer
+<<<<<<< Updated upstream
 import 'package:soko/utils/responsive.dart';
+=======
+import 'package:soko/l10n/app_localizations.dart';
+import 'package:soko/style.dart';
+
+import 'category_item.dart';
+import 'products_by_category_screen.dart';
+>>>>>>> Stashed changes
 
 // Clé de cache pour les catégories
 const String _categoriesCacheKey = 'cachedCategoriesData';
@@ -105,13 +111,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: backdColor,
-        title: const Text(
-          'Catégories',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          loc.categoriesTitle,
+          style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor ?? Colors.white),
         ),
       ),
       body: RefreshIndicator(
@@ -126,7 +133,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
                   horizontal: Responsive.getHorizontalPadding(context),
                 ),
                 child: Text(
-                  _errorMessage,
+                  _errorMessage.contains('Mode hors ligne')
+                      ? loc.offlineMode
+                      : loc.offlineError,
                   style: TextStyle(
                     color: _errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
                     fontWeight: FontWeight.bold,
@@ -141,7 +150,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               child: _isLoading
                   ? const ShimmerCategoryGrid() // UTILISATION DU SHIMMER
                   : _categories.isEmpty && _errorMessage.isEmpty
-                      ? const Center(child: Text('Aucune catégorie disponible.'))
+                      ? Center(child: Text(loc.categoriesEmpty))
                       : GridView.builder(
                             padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
                             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -207,7 +216,7 @@ class ShimmerCategoryGrid extends StatelessWidget {
         itemBuilder: (context, index) {
           return Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -218,7 +227,7 @@ class ShimmerCategoryGrid extends StatelessWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(40),
                   ),
                 ),
@@ -227,7 +236,7 @@ class ShimmerCategoryGrid extends StatelessWidget {
                 Container(
                   width: 100,
                   height: 15,
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                 ),
               ],
             ),

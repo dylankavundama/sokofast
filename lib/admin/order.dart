@@ -1,8 +1,10 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 // Importez vos fichiers de support
 import 'package:soko/api_config.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
 import 'package:url_launcher/url_launcher.dart'; // Assurez-vous que primaryYellow et primaryDarkBlue sont définis ici
 import 'package:soko/utils/responsive.dart';
@@ -65,29 +67,29 @@ class OrdersPage extends StatefulWidget {
 class _OrdersPageState extends State<OrdersPage> {
   List<Order> _orders = [];
   bool _isLoading = true;
-  String _selectedStatusFilter = 'TOUS'; // Par défaut
+  String? _selectedStatusFilter; // Sera initialisé dans build()
 
   // Liste des statuts disponibles pour le filtre et la mise à jour
-  final List<String> _validStatuses = [
-    'TOUS', // Pour le filtre uniquement
-    'EN COURS',
-    'TERMINER',
-    'ANNULER',
-  ];
+  List<String> _getValidStatuses(AppLocalizations loc) {
+    return [
+      loc.adminStatusAll, // Pour le filtre uniquement
+      loc.adminStatusInProgress,
+      loc.adminStatusCompleted,
+      loc.adminStatusCancelled,
+    ];
+  }
 
-  // Liste des statuts sans l'option 'TOUS', utilisée pour la modification de commande.
-  late final List<String> _updatableStatuses =
-      _validStatuses.where((s) => s != 'TOUS').toList();
+  // Liste des statuts sans l'option 'Tous', utilisée pour la modification de commande.
+  List<String> _getUpdatableStatuses(AppLocalizations loc) {
+    final allStatuses = _getValidStatuses(loc);
+    return allStatuses.where((s) => s != loc.adminStatusAll).toList();
+  }
 
   @override
   void initState() {
     super.initState();
     _fetchOrders();
   }
-
-  // ==================================================================
-  // 1. LOGIQUE DE FILTRAGE DES COMMANDES
-  // ==================================================================
 
   Future<void> _fetchOrders() async {
     setState(() {
@@ -97,8 +99,8 @@ class _OrdersPageState extends State<OrdersPage> {
     try {
       final Map<String, dynamic> queryParams = {};
 
-      // CLÉ DU FILTRAGE: Envoi du statut sélectionné à l'API PHP
-      if (_selectedStatusFilter != 'TOUS') {
+      final loc = AppLocalizations.of(context);
+      if (_selectedStatusFilter != null && _selectedStatusFilter != loc.adminStatusAll) {
         queryParams['status'] = _selectedStatusFilter;
       }
 
@@ -114,13 +116,14 @@ class _OrdersPageState extends State<OrdersPage> {
           _orders = jsonList.map((json) => Order.fromJson(json)).toList();
         });
       } else {
-        throw Exception(
-            'Échec du chargement des commandes: ${response.statusCode}');
+        final loc = AppLocalizations.of(context);
+        throw Exception(loc.adminLoadFailed(response.statusCode.toString()));
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Erreur de connexion aux commandes: ${e.toString()}'),
+            content: Text(loc.adminConnectionError(e.toString())),
             backgroundColor: Colors.red),
       );
     } finally {
@@ -130,16 +133,9 @@ class _OrdersPageState extends State<OrdersPage> {
     }
   }
 
-  // ==================================================================
-  // 2. LOGIQUE DE MISE À JOUR DU STATUT
-  // ==================================================================
-
   Future<void> _updateOrderStatus(
       String transactionId, String newStatus) async {
-    // Assurez-vous que l'API est correctement définie dans ApiConfig
     final url = '${ApiConfig.BASE_URL}/statut_order.php';
-
-    // Statut en majuscules pour le backend (ex: 'pending' -> 'PENDING')
     final String statusForBackend = newStatus.toUpperCase();
 
     try {
@@ -148,7 +144,6 @@ class _OrdersPageState extends State<OrdersPage> {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'transaction_id': transactionId,
-          // Envoyer le statut en MAJUSCULES
           'status': statusForBackend,
         }),
       );
@@ -169,31 +164,31 @@ class _OrdersPageState extends State<OrdersPage> {
           });
         }
 
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text('Statut mis à jour à ${statusForBackend}.'),
+              content: Text(loc.adminStatusUpdated(statusForBackend)),
               backgroundColor: Colors.green),
         );
 
-        // Optionnel : recharger la liste si un filtre est actif
-        // Assurez-vous que _selectedStatusFilter et _fetchOrders existent dans votre classe.
-        if (_selectedStatusFilter != 'TOUS' &&
+        if (_selectedStatusFilter != null && 
+            _selectedStatusFilter != loc.adminStatusAll &&
             _selectedStatusFilter != newStatus) {
-          // Si le nouveau statut ne correspond pas au filtre actuel, on recharge la liste pour masquer la commande.
           _fetchOrders();
         }
       } else {
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Échec de la mise à jour: ${responseData['message'] ?? 'Erreur serveur'}'),
+              content: Text(loc.adminUpdateFailed(responseData['message'] ?? loc.adminServerError)),
               backgroundColor: Colors.orange),
         );
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Erreur réseau lors de la mise à jour: $e'),
+            content: Text(loc.adminNetworkError(e.toString())),
             backgroundColor: Colors.red),
       );
     }
@@ -209,56 +204,43 @@ class _OrdersPageState extends State<OrdersPage> {
 
     final Uri uri = Uri.parse(googleMapsUrl);
 
-    // Vérifie si l'application peut lancer l'URL
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      // Gestion de l'erreur
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(
-                  'Impossible d\'ouvrir la carte pour $latitude, $longitude')),
+              content: Text(loc.adminCouldNotOpenMap(latitude.toString(), longitude.toString()))),
         );
       }
     }
   }
 
-// À placer dans la classe d'état de votre Widget (ex: _OrderHistoryScreenState)
-
-// Fonction utilitaire pour extraire le numéro de téléphone du client
   String _extractClientPhoneNumber(String paymentMethod) {
-    // Cas FlexPay (ex: 'FlexPay:243812345678')
     if (paymentMethod.contains(':')) {
       return paymentMethod.split(':').last;
     }
-    // Cas WhatsApp ou autres (le numéro est le champ lui-même)
     return paymentMethod;
   }
 
   Future<void> _launchWhatsAppClient(dynamic order) async {
-    // Le numéro de téléphone du client est stocké dans paymentMethod dans votre DB
     final String clientPhoneNumber =
         _extractClientPhoneNumber(order.paymentMethod);
     final String transactionId = order.transactionId;
 
+    final loc = AppLocalizations.of(context);
     if (clientPhoneNumber.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text("Numéro de client non trouvé pour cette commande.")),
+          SnackBar(
+              content: Text(loc.adminClientPhoneNotFound)),
         );
       }
       return;
     }
 
-    // Formatage du numéro pour WhatsApp (doit inclure le code pays sans le '+', ex: 243...)
-    // WhatsApp fonctionne mieux avec le code pays (243) directement collé au numéro.
-
-    // Message pré-rempli pour l'administrateur
-    final message =
-        'Bonjour, je vous contacte au sujet de votre commande n° $transactionId. Elle est actuellement au statut : ${order.status}.';
+    final message = loc.adminWhatsappMessage(transactionId, order.status);
 
     // Construction de l'URL WhatsApp
     final url = Uri.parse(
@@ -268,18 +250,19 @@ class _OrdersPageState extends State<OrdersPage> {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
+        final loc = AppLocalizations.of(context);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(
-                    "Impossible d'ouvrir WhatsApp pour le numéro $clientPhoneNumber.")),
+                content: Text(loc.adminCouldNotOpenWhatsapp(clientPhoneNumber))),
           );
         }
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du lancement de WhatsApp: $e')),
+          SnackBar(content: Text(loc.adminWhatsappError(e.toString()))),
         );
       }
     }
@@ -287,16 +270,19 @@ class _OrdersPageState extends State<OrdersPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    // Initialiser le filtre si ce n'est pas déjà fait
+    _selectedStatusFilter ??= loc.adminStatusAll;
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Gestion des Commandes',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          loc.adminOrdersTitle,
+          style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor ?? Colors.white),
         ),
         backgroundColor: primaryYellow,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: Icon(Icons.refresh, color: Theme.of(context).appBarTheme.foregroundColor ?? Colors.white),
             onPressed: _fetchOrders,
           ),
         ],
@@ -307,12 +293,12 @@ class _OrdersPageState extends State<OrdersPage> {
           Padding(
             padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.5),
             child: DropdownButtonFormField<String>(
-              decoration: const InputDecoration(
-                labelText: 'Filtrer par Statut',
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: loc.adminFilterStatus,
+                border: const OutlineInputBorder(),
               ),
-              value: _selectedStatusFilter,
-              items: _validStatuses
+              value: _selectedStatusFilter ?? loc.adminStatusAll,
+              items: _getValidStatuses(loc)
                   .map((status) => DropdownMenuItem(
                         value: status,
                         child: Text(status),
@@ -339,12 +325,23 @@ class _OrdersPageState extends State<OrdersPage> {
                       itemBuilder: (context, index) {
                         final order = _orders[index];
 
+<<<<<<< Updated upstream
                         // Détermine la valeur initiale du Dropdown pour la modification
                         // C'EST LA CORRECTION CLÉ POUR ÉVITER LE CRASH.
                         final String dropdownValue =
                             _updatableStatuses.contains(order.status)
                                 ? order.status
                                 : 'EN COURS'; // Valeur de secours valide
+=======
+                      final loc = AppLocalizations.of(context);
+                      final updatableStatuses = _getUpdatableStatuses(loc);
+                      // Détermine la valeur initiale du Dropdown pour la modification
+                      // C'EST LA CORRECTION CLÉ POUR ÉVITER LE CRASH.
+                      final String dropdownValue =
+                          updatableStatuses.contains(order.status)
+                              ? order.status
+                              : loc.adminStatusInProgress; // Valeur de secours valide
+>>>>>>> Stashed changes
 
                         return Card(
                           margin: EdgeInsets.symmetric(
@@ -357,30 +354,24 @@ class _OrdersPageState extends State<OrdersPage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'ID: ${order.transactionId}',
+                                loc.adminOrderId(order.transactionId),
                                 style: TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.green),
                               ),
                               Divider(),
                               const SizedBox(height: 5),
-                              Text('Client: ${order.name}'),
-                              //   Text('Adresse: ${order.address}'),
-                              Text('Méthode: ${order.paymentMethod}'),
+                              Text(loc.adminClient(order.name)),
+                              Text('${loc.adminPaymentMethod}: ${order.paymentMethod}'),
                               Text(
-                                'Total: ${order.totalPrice.toStringAsFixed(2)} \$',
+                                loc.adminTotal(order.totalPrice.toStringAsFixed(2)),
                                 style: const TextStyle(
                                     fontWeight: FontWeight.bold),
                               ),
-                              Text('Produits: ${order.productsSummary}',
+                              Text(loc.adminProducts(order.productsSummary),
                                   style: const TextStyle(
                                       fontSize: 12,
                                       fontStyle: FontStyle.italic)),
-                              //  const Divider(),
-                              // Assurez-vous que les coordonnées existent et sont valides avant d'afficher le bouton
-                              // Affichage et modification du statut
-                   
-
                               Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
@@ -389,10 +380,7 @@ class _OrdersPageState extends State<OrdersPage> {
                                       icon: const Icon(Icons.pin_drop,
                                           color: Colors.red),
                                       onPressed: () {
-                                        // Appel de la fonction de lancement de la carte
-                                        double lat = order.latitude;
-                                        double lon = order.longitude;
-                                        _launchMap(lat, lon);
+                                        _launchMap(order.latitude, order.longitude);
                                       },
                                     ),
                                     Text(order.address),
@@ -405,9 +393,9 @@ class _OrdersPageState extends State<OrdersPage> {
                                       },
                                       icon: const Icon(Icons.call,
                                           color: Colors.green),
-                                      label: const Text('Chat',
+                                      label: Text(loc.adminChat,
                                           style:
-                                              TextStyle(color: Colors.white)),
+                                              TextStyle(color: Theme.of(context).appBarTheme.foregroundColor ?? Colors.white)),
                                     ),
                                   ]),
 
@@ -415,20 +403,16 @@ class _OrdersPageState extends State<OrdersPage> {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('Statut actuel: ${order.status}',
+                                  Text(loc.adminCurrentStatus(order.status),
                                       style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: order.status == 'TERMINER'
+                                          color: order.status == loc.adminStatusCompleted
                                               ? Colors.green
-                                              : Colors.orange)),
-
-                                  // Dropdown pour la modification (CORRIGÉ)
+                                              : Colors.orange)                                  ),
                                   DropdownButton<String>(
-                                    value:
-                                        dropdownValue, // Utilise la valeur sécurisée
-                                    items:
-                                        _updatableStatuses // Liste sans 'TOUS'
-                                            .map((String value) {
+                                    value: dropdownValue,
+                                    items: updatableStatuses
+                                        .map((String value) {
                                       return DropdownMenuItem<String>(
                                         value: value,
                                         child: Text(value),

@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // NOUVEL IMPORT SHIMMER
 import 'package:soko/Product/productCard.dart';
+<<<<<<< Updated upstream
+=======
+import 'package:soko/l10n/app_localizations.dart';
+>>>>>>> Stashed changes
 import 'package:soko/style.dart'; // Contient 'loading' et 'primaryYellow'
 import 'package:soko/utils/responsive.dart';
 
@@ -147,26 +151,27 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final bool isProductListEmpty = filteredProducts.isEmpty && !isLoading;
     
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         centerTitle: true,
         title: _isSearching
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Rechercher...',
+                decoration: InputDecoration(
+                  hintText: loc.productSearchHint,
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.black54),
+                  hintStyle: TextStyle(color: Theme.of(context).hintColor),
                 ),
-                style: const TextStyle(color: Colors.black),
+                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
                 onChanged: _searchProducts,
               )
             : Image.asset(height: 55, 'assets/icon.png'),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         actions: [
           IconButton(
             icon: Icon(
@@ -189,7 +194,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
       body: isLoading
           ? const ShimmerLoadingList()
           : isProductListEmpty && errorMessage.isEmpty
-              ? Center(child: Text(_isSearching ? 'Aucun produit trouvé pour cette recherche.' : 'Aucun produit n\'est disponible.'))
+              ? Center(
+                  child: Text(
+                    _isSearching
+                        ? loc.productEmptySearch
+                        : loc.productEmpty,
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: fetchProducts,
                   child: Column(
@@ -202,7 +213,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
                             horizontal: Responsive.getHorizontalPadding(context),
                           ),
                           child: Text(
-                            errorMessage,
+                            errorMessage.contains('Mode hors ligne')
+                                ? loc.offlineMode
+                                : loc.offlineError,
                             style: TextStyle(
                               color: errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
                               fontWeight: FontWeight.bold,
@@ -277,9 +290,10 @@ class ShimmerLoadingList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Couleurs claires pour l'effet Shimmer
-    final Color baseColor = Colors.grey[300]!;
-    final Color highlightColor = Colors.grey[100]!;
+    // Couleurs adaptées au thème pour l'effet Shimmer
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final Color highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -301,7 +315,7 @@ class ShimmerLoadingList extends StatelessWidget {
                     width: 150,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
@@ -321,6 +335,7 @@ class ShimmerLoadingList extends StatelessWidget {
                     ),
                     itemCount: Responsive.getGridColumnCount(context) * 2, // Simule des produits selon le nombre de colonnes
                     itemBuilder: (context, index) {
+<<<<<<< Updated upstream
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -357,6 +372,48 @@ class ShimmerLoadingList extends StatelessWidget {
                             margin: const EdgeInsets.symmetric(horizontal: 8),
                           ),
                         ],
+=======
+                      return Container(
+                        width: 160,
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Simuler l'Image (grande boîte)
+                            Container(
+                              height: 160,
+                              width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            ),
+                            const SizedBox(height: 8),
+                            // Simuler le Nom du Produit (Ligne 1)
+                            Container(
+                              width: double.infinity,
+                              height: 10,
+                              color: Theme.of(context).cardColor,
+                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            ),
+                            // Simuler le Nom du Produit (Ligne 2)
+                            Container(
+                              width: 80,
+                              height: 10,
+                              color: Theme.of(context).cardColor,
+                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            ),
+                            const SizedBox(height: 8),
+                            // Simuler le Prix
+                            Container(
+                              width: 60,
+                              height: 12,
+                              color: Theme.of(context).cardColor,
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                            ),
+                          ],
+                        ),
+>>>>>>> Stashed changes
                       );
                     },
                   ),

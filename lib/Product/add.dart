@@ -5,12 +5,16 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+<<<<<<< Updated upstream
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soko/Profil/mes_produits.dart';
 import 'package:soko/services/user_service.dart';
 import 'package:soko/utils/responsive.dart';
 // Importez vos styles si nécessaire
 // import 'package:soko/style.dart'; 
+=======
+import 'package:soko/l10n/app_localizations.dart';
+>>>>>>> Stashed changes
 
 // =======================================================
 // ⚠️ CONSTANTES DE CONFIGURATION - À METTRE À JOUR
@@ -46,9 +50,6 @@ class ProductCategory {
   }
 }
 
-// =======================================================
-// 🚀 ÉCRAN D'AJOUT DE PRODUIT
-// =======================================================
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
 
@@ -78,11 +79,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   @override
   void initState() {
     super.initState();
-    // 1. Calcul de l'en-tête Basic Auth pour l'API WooCommerce (WC)
     final wcAuth = base64Encode(utf8.encode("$_consumerKey:$_consumerSecret"));
     _wcAuthHeaders = {"Authorization": "Basic $wcAuth"};
-
-    // 2. Calcul de l'en-tête Basic Auth pour l'API Media (WP)
     final mediaAuth = base64Encode(utf8.encode("$_mediaUsername:$_mediaPassword"));
     _mediaAuthHeaders = {"Authorization": "Basic $mediaAuth"};
 
@@ -98,9 +96,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     super.dispose();
   }
 
-  // =======================================================
-  // 🔄 LOGIQUE DE RÉCUPÉRATION DES CATÉGORIES (WooCommerce)
-  // =======================================================
   Future<void> _fetchCategories() async {
     setState(() {
       _isLoadingCategories = true;
@@ -110,7 +105,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     try {
       final response = await http.get(
         Uri.parse("$_baseUrl$_wcApiPath/products/categories?per_page=100"),
-        headers: _wcAuthHeaders, // Utilisation des clés WC
+        headers: _wcAuthHeaders,
       );
 
       if (response.statusCode == 200) {
@@ -118,12 +113,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
         _categories =
             jsonList.map((json) => ProductCategory.fromJson(json)).toList();
       } else {
+        final loc = AppLocalizations.of(context);
         throw Exception(
-            "Échec du chargement des catégories: ${response.statusCode}");
+            loc.addCategoryLoadFailed(response.statusCode.toString()));
       }
     } catch (e) {
-      print("❌ Erreur de récupération des catégories: $e");
-      _categoryError = "Erreur de chargement des catégories. Vérifiez les clés WC.";
+      final loc = AppLocalizations.of(context);
+      _categoryError = loc.addCategoryError;
     } finally {
       setState(() {
         _isLoadingCategories = false;
@@ -131,9 +127,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  // =======================================================
-  // 🖼️ LOGIQUE DE SÉLECTION D'IMAGE
-  // =======================================================
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final image = await picker.pickImage(source: ImageSource.gallery);
@@ -142,13 +135,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-  // =======================================================
-  // 📤 UPLOAD IMAGE AVEC MOT DE PASSE D'APPLICATION (WP REST API)
-  // =======================================================
   Future<int?> _uploadImage() async {
     if (_selectedImage == null) return null;
 
     try {
+<<<<<<< Updated upstream
       // Vérifier la taille du fichier avant l'upload (limite: 20 Mo)
       final file = File(_selectedImage!.path);
       final fileSize = await file.length();
@@ -170,16 +161,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
       }
 
       print("📷 Tentative d'upload d'image (${(fileSize / (1024 * 1024)).toStringAsFixed(2)} Mo)...");
+=======
+>>>>>>> Stashed changes
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse("$_baseUrl$_wpApiPath/media"), // API Media de WordPress
+        Uri.parse("$_baseUrl$_wpApiPath/media"),
       );
 
-      // Utilisation des en-têtes d'auth du Mot de passe d'application
       request.headers.addAll({
         'Content-Disposition': 'attachment; filename="${_selectedImage!.name}"',
         'Content-Type': 'image/jpeg', 
-        ..._mediaAuthHeaders, // Utilisation des clés WP Media
+        ..._mediaAuthHeaders,
       });
       
       request.files.add(
@@ -197,6 +189,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         print("✅ IMAGE UPLOADÉE AVEC SUCCÈS (ID: ${jsonResponse['id']})");
         return jsonResponse['id'];
       } else {
+<<<<<<< Updated upstream
         String errorMessage = jsonResponse['message'] ?? 'Erreur inconnue';
         
         // Messages d'erreur plus explicites
@@ -213,12 +206,22 @@ class _AddProductScreenState extends State<AddProductScreen> {
               content: Text("Erreur upload image: $errorMessage"),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 5),
+=======
+        final loc = AppLocalizations.of(context);
+        print("❌ ÉCHEC UPLOAD: ${jsonResponse['message']}");
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(loc.addImageUploadError(jsonResponse['message'])),
+              backgroundColor: Colors.orange,
+>>>>>>> Stashed changes
             ),
           );
         }
         return null;
       }
     } catch (e) {
+<<<<<<< Updated upstream
       String errorMsg = 'Erreur lors de l\'upload de l\'image';
       if (e.toString().contains('upload_max_filesize') || e.toString().contains('exceeds')) {
         errorMsg = 'L\'image est trop volumineuse. Limite actuelle: 20 Mo. Veuillez réduire la taille de l\'image.';
@@ -233,19 +236,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ),
         );
       }
+=======
+>>>>>>> Stashed changes
       return null;
     }
   }
 
-  // =======================================================
-  // 📦 CRÉATION PRODUIT WOOCOMMERCE
-  // =======================================================
   Future<void> _createProductWithImage() async {
+    final loc = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate() || _selectedCategory == null) {
       if (_selectedCategory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("⚠️ Veuillez sélectionner une catégorie."),
+          SnackBar(
+            content: Text(loc.addCategoryRequiredWarning),
             backgroundColor: Colors.orange,
           ),
         );
@@ -259,10 +262,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
       // 1. Uploader l'image
       int? imageId;
       if (_selectedImage != null) {
+        final loc = AppLocalizations.of(context);
         imageId = await _uploadImage();
         if (_selectedImage != null && imageId == null) {
            // Si l'image a été sélectionnée mais l'upload a échoué, on arrête.
-           throw Exception("Échec de l'upload d'image. Arrêt de la création du produit.");
+           throw Exception(loc.addImageUploadFailed);
         }
       }
 
@@ -276,7 +280,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
         "categories": [
           {"id": _selectedCategory!.id}
         ],
-        // MÉTADONNÉES (pour le vendeur)
         "meta_data": [
           {
             "key": "vendor_user_id",
@@ -289,27 +292,23 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ]
       };
 
-      // 3. Associer l'image si upload réussit
       if (imageId != null) {
         productData["images"] = [
           {"id": imageId}
         ];
       }
 
-      // 4. Créer le produit
       final response = await http.post(
         Uri.parse("$_baseUrl$_wcApiPath/products"),
-        // Fusionner les en-têtes WC avec l'en-tête Content-Type JSON
         headers: {..._wcAuthHeaders, "Content-Type": "application/json"},
         body: jsonEncode(productData),
       );
-
-      print("=== RÉPONSE PRODUIT: ${response.statusCode} ===");
 
       if (response.statusCode == 201) {
         final product = jsonDecode(response.body);
         final hasImage = product['images'] != null && product['images'].isNotEmpty;
 
+        final loc = AppLocalizations.of(context);
         if (mounted) {
           // 💡 NOUVEAU : S'assurer que l'email est sauvegardé dans SharedPreferences
           final currentUser = FirebaseAuth.instance.currentUser;
@@ -328,7 +327,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                hasImage ? "✅ Produit créé avec image!" : "✅ Produit créé sans image.",
+                hasImage ? loc.addProductCreatedWithImage : loc.addProductCreatedWithoutImage,
               ),
               backgroundColor: hasImage ? Colors.green : Colors.blue,
               duration: const Duration(seconds: 2),
@@ -346,15 +345,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
           );
         }
       } else {
+        final loc = AppLocalizations.of(context);
         final error = jsonDecode(response.body);
-        print("❌ Erreur création produit: ${error['message']}");
-        throw Exception("Erreur création produit: ${error['message']}");
+        throw Exception(loc.addProductCreationError(error['message']));
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Erreur de publication: $e"),
+            content: Text(loc.addPublicationError(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -364,6 +364,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
+<<<<<<< Updated upstream
   // =======================================================
   // 💡 NOUVEAU : Vérifier si l'utilisateur est vendeur
   // =======================================================
@@ -395,6 +396,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
   // =======================================================
   // 🧹 NETTOYAGE DU FORMULAIRE
   // =======================================================
+=======
+>>>>>>> Stashed changes
   void _resetForm() {
     _formKey.currentState?.reset();
     _nameController.clear();
@@ -406,11 +409,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
     });
   }
 
-  // =======================================================
-  // 📐 INTERFACE UTILISATEUR
-  // =======================================================
   @override
   Widget build(BuildContext context) {
+<<<<<<< Updated upstream
     // 💡 NOUVEAU : Afficher un loader pendant la vérification
     if (_isCheckingStatus) {
       return Scaffold(
@@ -425,13 +426,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
     
     // Note: 'primaryYellow' n'étant pas défini, j'utilise une couleur standard.
+=======
+    final loc = AppLocalizations.of(context);
+>>>>>>> Stashed changes
     final Color primaryYellow = Colors.yellow.shade700; 
     
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
-        title: const Text("Ajouter un produit"),
+        title: Text(loc.addProductTitle),
       ),
+<<<<<<< Updated upstream
       body: Responsive.centerContent(
         context,
         Padding(
@@ -470,10 +475,44 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                 ),
                 SizedBox(height: Responsive.getVerticalPadding(context) * 2.5),
+=======
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              const SizedBox(height: 20),
+
+              // 📝 Champs de saisie
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: loc.addNameLabel),
+                validator: (v) =>
+                    v?.isEmpty ?? true ? loc.addNameRequired : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _priceController,
+                decoration: InputDecoration(labelText: loc.addPriceLabel),
+                keyboardType:
+                    const TextInputType.numberWithOptions(decimal: true),
+                validator: (v) =>
+                    v?.isEmpty ?? true ? loc.addPriceRequired : null,
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _descriptionController,
+                decoration:
+                    InputDecoration(labelText: loc.addDescriptionLabel),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 20),
+>>>>>>> Stashed changes
 
               // 🏷️ SÉLECTION DE CATÉGORIE
-              const Text("Catégorie du produit :",
-                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(loc.addCategoryLabel,
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
               _isLoadingCategories
                   ? const LinearProgressIndicator()
                   : _categoryError != null
@@ -485,10 +524,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                             contentPadding: EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 5),
                           ),
-                          hint: const Text("Sélectionnez une catégorie"),
+                          hint: Text(loc.addCategoryHint),
                           value: _selectedCategory,
                           validator: (v) =>
-                              v == null ? "Catégorie requise" : null,
+                              v == null ? loc.addCategoryRequired : null,
                           items: _categories.map((category) {
                             return DropdownMenuItem<ProductCategory>(
                               value: category,
@@ -516,8 +555,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 onPressed: _pickImage,
                 icon: const Icon(Icons.image),
                 label: Text(_selectedImage == null
-                    ? "Choisir une image"
-                    : "Changer l'image"),
+                    ? loc.addPickImage
+                    : loc.addChangeImage),
               ),
 
               const SizedBox(height: 24),
@@ -530,18 +569,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 15),
                 ),
                 child: _isPublishing
-                    ? const Row(
+                    ? Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          CircularProgressIndicator(color: Colors.white),
-                          SizedBox(width: 10),
-                          Text("Publication...",
-                              style: TextStyle(color: Colors.white)),
+                          const CircularProgressIndicator(color: Colors.white),
+                          const SizedBox(width: 10),
+                          Text(loc.addPublishing,
+                              style: const TextStyle(color: Colors.white)),
                         ],
                       )
-                    : const Text(
-                        "Créer le produit",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                    : Text(
+                        loc.addCreateButton,
+                        style: const TextStyle(
+                            color: Colors.white, fontSize: 16),
                       ),
               ),
             ],

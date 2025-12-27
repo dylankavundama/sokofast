@@ -3,7 +3,11 @@ description: Application des ventes en ligne.
 # description: A new Flutter project.
 publish_to: "none"
 
+<<<<<<< Updated upstream
 version: 2.2.0+29
+=======
+version: 2.3.0+26
+>>>>>>> Stashed changes
 
 environment:
   sdk: ">=3.5.0 <4.2.0"
@@ -13,6 +17,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_localizations:
+    sdk: flutter
+
    # flutter_slidable: any
   http: ^0.13.3
   shimmer: ^3.0.0 # Ajoutez ou mettez à jour cette ligne
@@ -20,7 +27,7 @@ dependencies:
   shared_preferences: ^2.0.8
   # flutter_secure_storage: ^5.0.2
   provider: ^6.0.2
-  intl: ^0.17.0  # Pour le formatage des prix
+  intl: ^0.20.2  # Pour le formatage des prix (aligné sur flutter_localizations)
   google_fonts :
   image_picker :
   url_launcher: ^6.0.12

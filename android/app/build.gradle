@@ -27,8 +27,10 @@ if (flutterVersionName == null) {
 
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
+def hasKeystore = false
 if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+    hasKeystore = true
 }
 android {
     namespace "com.sokofast.btc"
@@ -57,8 +59,13 @@ android {
     }
 
     signingConfigs {
+<<<<<<< Updated upstream
         if (keystorePropertiesFile.exists() && 
             keystoreProperties['storeFile'] != null) {
+=======
+        // Ne configurer la signature release que si un keystore est présent
+        if (hasKeystore) {
+>>>>>>> Stashed changes
             release {
                 keyAlias keystoreProperties['keyAlias']
                 keyPassword keystoreProperties['keyPassword']
@@ -69,8 +76,14 @@ android {
     }
     buildTypes {
         release {
+<<<<<<< Updated upstream
             if (keystorePropertiesFile.exists() && 
                 keystoreProperties['storeFile'] != null) {
+=======
+            // Utiliser la config de signature release uniquement si elle existe,
+            // sinon laisser Gradle utiliser la config par défaut (debug) en dev.
+            if (hasKeystore) {
+>>>>>>> Stashed changes
                 signingConfig signingConfigs.release
             }
         }

@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
  import 'package:http/http.dart' as http;
 import 'package:soko/style.dart';
+<<<<<<< Updated upstream
 import 'package:soko/utils/responsive.dart';
+=======
+import 'package:soko/l10n/app_localizations.dart';
+>>>>>>> Stashed changes
 
 import '../Product/productDetailScreen.dart';
 
@@ -65,6 +69,7 @@ class _ProductsByCategoryScreenState extends State<ProductsByCategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(        backgroundColor: backdColor,
         title: Text(widget.categoryName,style: TextStyle(color: Colors.white),),
@@ -74,7 +79,7 @@ class _ProductsByCategoryScreenState extends State<ProductsByCategoryScreen> {
           : _errorMessage.isNotEmpty
               ? Center(child: Text(_errorMessage))
               : _products.isEmpty
-                  ? Center(child: Text('Aucun produit dans cette catégorie'))
+                  ? Center(child: Text(loc.categoryNoProducts))
                   : GridView.builder(
                       padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

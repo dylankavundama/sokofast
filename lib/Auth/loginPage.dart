@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 // import 'dart:convert';
 // import 'dart:io';
 // import 'dart:math';
@@ -550,6 +551,8 @@
 
 import 'dart:convert';
 import 'dart:io';
+=======
+>>>>>>> Stashed changes
 import 'dart:math';
 
 import 'package:crypto/crypto.dart';
@@ -557,10 +560,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+<<<<<<< Updated upstream
 import 'package:shared_preferences/shared_preferences.dart'; // Ajout de shared_preferences
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:soko/Screen/bottonNav.dart';
 import 'package:soko/utils/responsive.dart';
+=======
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
+import 'package:soko/Screen/bottonNav.dart';
+import 'package:soko/l10n/app_localizations.dart';
+
+String generateNonce({int length = 32}) {
+  const charset =
+      '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+  final random = Random.secure();
+  return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+      .join();
+}
+>>>>>>> Stashed changes
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -574,9 +592,13 @@ class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   String _error = '';
   bool _isLoading = false;
+<<<<<<< Updated upstream
   bool _isAppleLoading = false;
 
   // ✅ SAUVEGARDER LES DONNÉES UTILISATEUR DANS SHARED_PREFERENCES
+=======
+
+>>>>>>> Stashed changes
   Future<void> _saveUserData(User user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -585,25 +607,34 @@ class _LoginPageState extends State<LoginPage> {
       await prefs.setString('user_photo_url', user.photoURL ?? '');
       await prefs.setString('user_id', user.uid);
       await prefs.setBool('is_logged_in', true);
+<<<<<<< Updated upstream
 
       print("✅ Données utilisateur sauvegardées: ${user.email}");
+=======
+>>>>>>> Stashed changes
     } catch (e) {
-      print("❌ Erreur sauvegarde utilisateur: $e");
+      print("Erreur sauvegarde utilisateur: $e");
     }
   }
+<<<<<<< Updated upstream
 
   // ✅ VÉRIFIER SI UN UTILISATEUR EST DÉJÀ CONNECTÉ
+=======
+>>>>>>> Stashed changes
   Future<bool> _checkExistingUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool('is_logged_in') ?? false;
     } catch (e) {
-      print("❌ Erreur vérification connexion: $e");
+      print("Erreur vérification connexion: $e");
       return false;
     }
   }
 
+<<<<<<< Updated upstream
   // ✅ RÉCUPÉRER LES DONNÉES UTILISATEUR
+=======
+>>>>>>> Stashed changes
   static Future<Map<String, String>> getUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -614,12 +645,15 @@ class _LoginPageState extends State<LoginPage> {
         'uid': prefs.getString('user_id') ?? '',
       };
     } catch (e) {
-      print("❌ Erreur récupération données utilisateur: $e");
+      print("Erreur récupération données utilisateur: $e");
       return {};
     }
   }
 
+<<<<<<< Updated upstream
   // ✅ DÉCONNEXION ET SUPPRESSION DES DONNÉES
+=======
+>>>>>>> Stashed changes
   static Future<void> logoutUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -628,19 +662,66 @@ class _LoginPageState extends State<LoginPage> {
       await prefs.remove('user_photo_url');
       await prefs.remove('user_id');
       await prefs.remove('is_logged_in');
+<<<<<<< Updated upstream
 
       // Déconnexion Google
+=======
+      
+>>>>>>> Stashed changes
       await GoogleSignIn().signOut();
-      // Déconnexion Firebase
       await FirebaseAuth.instance.signOut();
+<<<<<<< Updated upstream
 
       print("✅ Utilisateur déconnecté et données supprimées");
+=======
+>>>>>>> Stashed changes
     } catch (e) {
-      print("❌ Erreur déconnexion: $e");
+      print("Erreur déconnexion: $e");
     }
   }
 
+<<<<<<< Updated upstream
+=======
+  void _navigateToHome() {
+    if (mounted) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => BottomNavExample()),
+      );
+    }
+  }
+
+  void _handleAuthError(FirebaseAuthException e, AppLocalizations loc) {
+    setState(() {
+      _isLoading = false;
+      if (e.code == 'account-exists-with-different-credential') {
+        _error = loc.loginErrorAccountExists;
+      } else if (e.code == 'invalid-credential') {
+        _error = loc.loginErrorInvalidCredential;
+      } else if (e.code == 'user-disabled') {
+        _error = loc.loginErrorUserDisabled;
+      } else if (e.code == 'user-not-found') {
+        _error = loc.loginErrorUserNotFound;
+      } else if (e.code == 'wrong-password') {
+        _error = loc.loginErrorWrongPassword;
+      } else {
+        _error = loc.loginErrorGeneric;
+      }
+    });
+  }
+
+  // ✅ UTILITAIRE: GÉRER LES ERREURS GÉNÉRIQUES
+  void _handleGenericError(dynamic e, AppLocalizations loc, {bool isGoogle = false}) {
+    setState(() {
+      _isLoading = false;
+      _error = isGoogle ? loc.loginErrorGoogleFailed : loc.loginErrorAppleFailed;
+    });
+  }
+
+  // 1. FONCTION DE CONNEXION GOOGLE
+>>>>>>> Stashed changes
   Future<void> signInWithGoogle() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _isLoading = true;
       _error = '';
@@ -682,6 +763,7 @@ class _LoginPageState extends State<LoginPage> {
       } else {
         throw Exception("Utilisateur null après connexion");
       }
+<<<<<<< Updated upstream
     }
     on FirebaseAuthException catch (e) {
       setState(() {
@@ -706,6 +788,13 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = false;
         _error = 'Échec de la connexion Google. Veuillez réessayer.';
       });
+=======
+    } on FirebaseAuthException catch (e) {
+      _handleAuthError(e, loc);
+      print('Erreur Firebase Auth (Google): $e');
+    } catch (e) {
+      _handleGenericError(e, loc, isGoogle: true);
+>>>>>>> Stashed changes
       print('Erreur de connexion Google: $e');
     }
   }
@@ -725,6 +814,7 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> signInWithApple() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _isAppleLoading = true;
       _error = '';
@@ -775,7 +865,24 @@ class _LoginPageState extends State<LoginPage> {
           );
         }
       } else {
+<<<<<<< Updated upstream
         throw Exception("Utilisateur null après connexion");
+=======
+        throw Exception("Utilisateur null après connexion Apple");
+      }
+    } on FirebaseAuthException catch (e) {
+      _handleAuthError(e, loc);
+      print('Erreur Firebase Auth (Apple): $e');
+    } on apple.SignInWithAppleAuthorizationException catch (e) {
+      // Gérer l'annulation par l'utilisateur
+      if (e.code == apple.AuthorizationErrorCode.canceled) {
+        print("Connexion Apple annulée par l'utilisateur.");
+        setState(() {
+          _isLoading = false;
+        });
+      } else {
+        _handleGenericError(e, loc);
+>>>>>>> Stashed changes
       }
     }
     on FirebaseAuthException catch (e) {
@@ -797,11 +904,16 @@ class _LoginPageState extends State<LoginPage> {
       });
       print('Erreur Firebase Auth: $e');
     } catch (e) {
+<<<<<<< Updated upstream
       setState(() {
         _isAppleLoading = false;
         _error = 'Échec de la connexion Apple. Veuillez réessayer.';
       });
       print('Erreur de connexion Google: $e');
+=======
+      _handleGenericError(e, loc);
+      print('Erreur de connexion Apple: $e');
+>>>>>>> Stashed changes
     }
   }
 
@@ -837,6 +949,7 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
@@ -849,6 +962,7 @@ class _LoginPageState extends State<LoginPage> {
             end: Alignment.bottomCenter,
           ),
         ),
+<<<<<<< Updated upstream
         child: Responsive.centerContent(
           context,
           Center(
@@ -876,6 +990,37 @@ class _LoginPageState extends State<LoginPage> {
                           fontWeight: FontWeight.w700,
                           color: Colors.blue.shade900,
                         ),
+=======
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Section de l'en-tête (Logo et titre)
+                Column(
+                  children: [
+                    Image.asset(
+                      'assets/icon.png',
+                      height: 120,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      loc.loginTitle,
+                      style: GoogleFonts.actor(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.blue.shade900,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      loc.loginSubtitle,
+                      style: GoogleFonts.abel(
+                        fontSize: 18,
+                        color: Colors.blue.shade700,
+>>>>>>> Stashed changes
                       ),
                       SizedBox(height: Responsive.getVerticalPadding(context) * 0.5),
                       Text(
@@ -933,7 +1078,11 @@ class _LoginPageState extends State<LoginPage> {
                             //    const CircularProgressIndicator(),
                             const SizedBox(height: 16),
                             Text(
+<<<<<<< Updated upstream
                               'Connexion automatique...',
+=======
+                              loc.loginProgress,
+>>>>>>> Stashed changes
                               style: GoogleFonts.abel(
                                 fontSize: 16,
                                 color: Colors.blue.shade700,
@@ -974,12 +1123,21 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           )
                               : Text(
+<<<<<<< Updated upstream
                             'Se connecter avec Google',
                             style: GoogleFonts.aBeeZee(
                               fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
                               fontWeight: FontWeight.w600,
                             ),
                           ),
+=======
+                                  loc.loginGoogle,
+                                  style: GoogleFonts.aBeeZee(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+>>>>>>> Stashed changes
                         ),
                       ),
 
@@ -988,6 +1146,7 @@ class _LoginPageState extends State<LoginPage> {
                         padding: const EdgeInsets.symmetric(vertical: 20),
                         child: Row(
                           children: [
+<<<<<<< Updated upstream
                             Expanded(
                               child: Divider(
                                 thickness: 1,
@@ -1009,6 +1168,20 @@ class _LoginPageState extends State<LoginPage> {
                               child: Divider(
                                 thickness: 1,
                                 color: Colors.grey[300],
+=======
+                            const SizedBox(height: 16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: apple.SignInWithAppleButton(
+                                onPressed: _isLoading ? null : signInWithApple,
+                                style: apple.SignInWithAppleButtonStyle.black,
+                                height: 56,
+                                borderRadius: BorderRadius.circular(12),
+                                iconAlignment: _isLoading 
+                                  ? apple.IconAlignment.center 
+                                  : apple.IconAlignment.left,
+                                text: _isLoading ? loc.loginAppleConnecting : loc.loginAppleButton,
+>>>>>>> Stashed changes
                               ),
                             ),
                           ],
@@ -1069,7 +1242,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Votre session sera sauvegardée pour une reconnexion automatique',
+                                loc.loginSessionInfo,
                                 style: GoogleFonts.abel(
                                   fontSize: 12,
                                   color: Colors.blue[700],

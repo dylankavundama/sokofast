@@ -326,6 +326,7 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.0.0"
+<<<<<<< Updated upstream
   flutter_native_splash:
     dependency: "direct dev"
     description:
@@ -334,6 +335,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.7"
+=======
+  flutter_localizations:
+    dependency: "direct main"
+    description: flutter
+    source: sdk
+    version: "0.0.0"
+>>>>>>> Stashed changes
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -596,10 +604,10 @@ packages:
     dependency: "direct main"
     description:
       name: intl
-      sha256: "910f85bce16fb5c6f614e117efa303e85a1731bb0081edf3604a2ae6e9a3cc91"
+      sha256: "3df61194eb431efc39c4ceba583b95633a403f46c9fd341e550ce0bfa50e9aa5"
       url: "https://pub.dev"
     source: hosted
-    version: "0.17.0"
+    version: "0.20.2"
   json_annotation:
     dependency: transitive
     description:

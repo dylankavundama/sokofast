@@ -1,7 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+<<<<<<< Updated upstream
 import 'package:soko/utils/responsive.dart';
+=======
+import 'package:soko/l10n/app_localizations.dart';
+>>>>>>> Stashed changes
 // Importez vos autres dépendances (constantes, ProductCategory, etc.)
 
 // ⚠️ NOUVEL ÉCRAN DE MODIFICATION
@@ -102,23 +106,25 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
       // Pour cet exemple, nous allons simuler l'appel à _updateProduct().
       final success = await _updateProduct(productId, updateData);
       
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("✅ Produit mis à jour!"), backgroundColor: Colors.green),
+            SnackBar(content: Text(loc.editProductUpdated), backgroundColor: Colors.green),
           );
           // Retourner à l'écran précédent (Mes Produits)
           Navigator.of(context).pop(true); 
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("❌ Échec de la mise à jour."), backgroundColor: Colors.red),
+            SnackBar(content: Text(loc.editUpdateFailed), backgroundColor: Colors.red),
           );
         }
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur: $e"), backgroundColor: Colors.red),
+          SnackBar(content: Text(loc.editError(e.toString())), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -128,7 +134,9 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
+<<<<<<< Updated upstream
       appBar: AppBar(title: Text("Modifier : ${widget.product['name'] ?? 'Produit'}"),),
       body: Responsive.centerContent(
         context,
@@ -193,6 +201,55 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
                 ),
               ],
             ),
+=======
+      appBar: AppBar(title: Text(loc.editTitle(widget.product['name'] ?? 'Produit'))),
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            children: [
+              // ➡️ Champ Nom
+              TextFormField(
+                controller: _nameController,
+                decoration: InputDecoration(labelText: loc.editProductName),
+                validator: (v) => v?.isEmpty ?? true ? loc.editNameRequired : null,
+              ),
+              const SizedBox(height: 16),
+              
+              // ➡️ Champ Prix
+              TextFormField(
+                controller: _priceController,
+                decoration: InputDecoration(labelText: loc.editPrice),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                validator: (v) => v?.isEmpty ?? true ? loc.editPriceRequired : null,
+              ),
+              const SizedBox(height: 16),
+              
+              // ➡️ Champ Description
+              TextFormField(
+                controller: _descriptionController,
+                decoration: InputDecoration(labelText: loc.editDescription),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 30),
+              
+              // ➡️ Bouton de Sauvegarde
+              ElevatedButton(
+                onPressed: _isUpdating ? null : _handleUpdate,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                ),
+                child: _isUpdating
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        loc.editSaveChanges,
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                      ),
+              ),
+            ],
+>>>>>>> Stashed changes
           ),
         ),
       ),

@@ -6,10 +6,14 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:soko/services.dart'; // Assurez-vous que ce fichier contient `baseUrl`
+<<<<<<< Updated upstream
 import 'package:url_launcher/url_launcher.dart';
 import 'package:soko/utils/responsive.dart';
 import 'package:soko/Auth/loginPage.dart';
 import 'package:soko/style.dart';
+=======
+import 'package:soko/l10n/app_localizations.dart';
+>>>>>>> Stashed changes
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -38,13 +42,18 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       _errorMessage = null;
     });
 
+    final loc = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.displayName == null) {
       // 💡 MODIFIÉ : Ne plus bloquer, permettre l'accès en mode invité
       setState(() {
         _isLoading = false;
+<<<<<<< Updated upstream
         _errorMessage = null; // Pas d'erreur, juste mode invité
         orders = []; // Liste vide pour les invités
+=======
+        _errorMessage = loc.ordersMustLogin;
+>>>>>>> Stashed changes
       });
       return;
     }
@@ -86,20 +95,23 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             orders.sort((a, b) => b['order_date'].compareTo(a['order_date']));
           });
         } else {
+          final loc = AppLocalizations.of(context);
           setState(() {
-            _errorMessage = json['message'] ?? 'Aucune commande trouvée.';
+            _errorMessage = json['message'] ?? loc.ordersNotFoundMessage;
             orders = []; // S'assurer que la liste est vide en cas d'erreur
           });
         }
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
-          _errorMessage = 'Erreur de serveur (${response.statusCode})';
+          _errorMessage = loc.ordersServerError(response.statusCode.toString());
           orders = [];
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        _errorMessage = 'Erreur de connexion: ${e.toString()}';
+        _errorMessage = loc.ordersConnectionError(e.toString());
         orders = [];
       });
     } finally {
@@ -127,9 +139,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mes Commandes'),
+        title: Text(loc.ordersTitle),
         centerTitle: true,
         actions: [
           IconButton(
@@ -178,6 +191,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                             color: Colors.grey[600],
                           ),
                         ),
+<<<<<<< Updated upstream
                         const SizedBox(height: 40),
                         ElevatedButton.icon(
                           onPressed: () {
@@ -205,6 +219,15 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       ],
                     ),
                   ),
+=======
+                      ),
+                      const SizedBox(height: 20),
+                      ElevatedButton(
+                        onPressed: _initializeAndFetchOrders,
+                        child: Text(loc.ordersRetry),
+                      ),
+                    ],
+>>>>>>> Stashed changes
                   ),
                 )
               : _errorMessage != null
@@ -237,13 +260,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         children: [
                           const Icon(Icons.shopping_bag_outlined, size: 50, color: Colors.grey),
                           const SizedBox(height: 20),
-                          const Text(
-                            'Aucune commande trouvée',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          Text(
+                            loc.ordersNotFound,
+                            style: const TextStyle(fontSize: 18, color: Colors.grey),
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'Connecté en tant que: ${loggedInUserName ?? ''}',
+                            '${loc.ordersConnectedAs} ${loggedInUserName ?? ''}',
                             style: const TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                         ],
@@ -282,7 +305,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 ),
                               ),
                               title: Text(
-                                'Commande #${order['id']}',
+                                loc.ordersOrderNumber(order['id'].toString()),
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                               subtitle: Column(
@@ -301,20 +324,24 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _buildInfoRow('Status', status, getStatusColor(status)),
-                                      _buildInfoRow('Méthode de paiement', order['payment_method']),
+                                      _buildInfoRow(loc.ordersStatus, status, getStatusColor(status)),
+                                      _buildInfoRow(loc.ordersPaymentMethod, order['payment_method']),
                                       if (order['address'] != null)
+<<<<<<< Updated upstream
                                         _buildInfoRow('Adresse', order['address']),
                                       
                                       // 💡 NOUVEAU : Informations du livreur
                                       if (order['livreur_id'] != null && order['livreur_nom'] != null)
                                         _buildLivreurSection(order),
                                       
+=======
+                                        _buildInfoRow(loc.ordersAddress, order['address']),
+>>>>>>> Stashed changes
                                       const SizedBox(height: 15),
                                       const Divider(),
-                                      const Text(
-                                        'Détails des produits:',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      Text(
+                                        loc.ordersProductsDetails,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                       ),
                                       const SizedBox(height: 10),
                                       ...(order['productList'] as List)
@@ -361,10 +388,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text(
-                                            // 'Total de la commande (30% incl. ):',
-                                                    'Total de la commande',
-                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          Text(
+                                            loc.ordersTotal,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                           ),
                                           Text(
                                             '${displayedOrderTotal.toStringAsFixed(2)} \$',

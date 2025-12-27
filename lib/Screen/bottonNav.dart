@@ -5,6 +5,7 @@ import 'package:soko/Categorie/category_screen.dart';
 import 'package:soko/Product/productListScreen.dart';
 import 'package:soko/Screen/CartScreen.dart';
 import 'package:soko/Screen/ProfileScreen.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
 
 class BottomNavExample extends StatefulWidget {
@@ -53,6 +54,7 @@ class _BottomNavExampleState extends State<BottomNavExample> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       floatingActionButton: Stack(
         alignment: Alignment.center,
@@ -109,18 +111,18 @@ class _BottomNavExampleState extends State<BottomNavExample> {
             });
           }
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
-            label: 'Accueil',
+            label: loc.navHome,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.shopping_bag),
-            label: 'Catégories',
+            label: loc.navCategories,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
-            label: 'Profil',
+            label: loc.navProfile,
           ),
         ],
       ),

@@ -4,11 +4,7 @@ import 'package:soko/admin/order.dart';
 
 // ⚠️ Assurez-vous que le chemin vers votre fichier de style est correct
 import 'package:soko/style.dart';
-<<<<<<< Updated upstream
-import 'package:soko/utils/responsive.dart';
-=======
 import 'package:soko/l10n/app_localizations.dart';
->>>>>>> Stashed changes
 
 class LoginLivre extends StatefulWidget {
   const LoginLivre({super.key});
@@ -63,30 +59,16 @@ class _LoginLivreState extends State<LoginLivre> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Responsive.centerContent(
-        context,
-        SingleChildScrollView(
-          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 2),
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               Image.asset(
-                'assets/liv.png',
-                height: Responsive.isMobile(context) ? 150.0 : 200.0,
-              ),
-              SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
+                  'assets/liv.png'),
+              const SizedBox(height: 30),
 
-<<<<<<< Updated upstream
-              Text(
-                'Veuillez entrer votre Identifiant pour accéder aux commandes.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                  color: Colors.grey[700],
-                ),
-              ),
-              SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
-=======
               Builder(
                 builder: (context) {
                   final loc = AppLocalizations.of(context);
@@ -98,7 +80,6 @@ class _LoginLivreState extends State<LoginLivre> {
                         style: TextStyle(fontSize: 16, color: Colors.grey[700]),
                       ),
                       const SizedBox(height: 30),
->>>>>>> Stashed changes
 
                       // Champ de saisie du Identifiant
                       TextField(
@@ -116,31 +97,6 @@ class _LoginLivreState extends State<LoginLivre> {
                       ),
                       const SizedBox(height: 20),
 
-<<<<<<< Updated upstream
-              // Bouton de connexion
-              SizedBox(
-                width: double.infinity,
-                height: Responsive.getVerticalPadding(context) * 6.25,
-                child: ElevatedButton(
-                  onPressed: _attemptLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryYellow,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 5,
-                  ),
-                  child: Text(
-                    'Accéder',
-                    style: TextStyle(
-                      fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 20),
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF2C3E50),
-                    ),
-                  ),
-                ),
-=======
                       // Bouton de connexion
                       SizedBox(
                         width: double.infinity,
@@ -167,7 +123,6 @@ class _LoginLivreState extends State<LoginLivre> {
                     ],
                   );
                 },
->>>>>>> Stashed changes
               ),
             ],
           ),

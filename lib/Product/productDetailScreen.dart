@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soko/Auth/loginPage.dart';
-import 'package:soko/Product/productCard.dart';
 import 'package:soko/Screen/CartScreen.dart';
 import 'package:soko/Widget/fullImage.dart';
 import 'package:soko/comment.dart';
@@ -15,10 +14,6 @@ import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/order.dart';
 import 'package:soko/style.dart';
 import 'package:url_launcher/url_launcher.dart';
-<<<<<<< Updated upstream
-import 'package:soko/utils/responsive.dart';
-=======
->>>>>>> Stashed changes
 
 class ProductDetailScreen extends StatefulWidget {
   final dynamic product;
@@ -34,10 +29,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   List<Map<String, dynamic>> cartItems = [];
   late TextEditingController nameController;
   late TextEditingController addressController;
-  
-  // 💡 NOUVEAU : États pour les produits récemment ajoutés
-  List<dynamic> _recentProducts = [];
-  bool _isLoadingRecentProducts = false;
 
   @override
   void initState() {
@@ -45,7 +36,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     nameController = TextEditingController();
     addressController = TextEditingController();
     _loadCartLocally();
-    _fetchRecentProducts(); // Charger les produits récents
   }
 
   @override
@@ -53,44 +43,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     nameController.dispose();
     addressController.dispose();
     super.dispose();
-  }
-
-  // 💡 NOUVEAU : Fonction pour récupérer les produits récemment ajoutés
-  Future<void> _fetchRecentProducts() async {
-    setState(() {
-      _isLoadingRecentProducts = true;
-    });
-
-    try {
-      final response = await http.get(
-        Uri.parse('https://www.babutik.com/wp-json/wc/v3/products?per_page=8&orderby=date&order=desc'),
-        headers: {
-          'Authorization': 'Basic ${base64Encode(utf8.encode('ck_20c9eaf44a30b5028558551525a1b24201ce8293:cs_d2f987d16ac480a59f04a5fefdf563a269667ca3'))}',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        // Exclure le produit actuel de la liste
-        final filteredProducts = data.where((product) => 
-          product['id'] != widget.product['id']
-        ).take(6).toList(); // Limiter à 6 produits
-        
-        setState(() {
-          _recentProducts = filteredProducts;
-          _isLoadingRecentProducts = false;
-        });
-      } else {
-        setState(() {
-          _isLoadingRecentProducts = false;
-        });
-      }
-    } catch (e) {
-      print('Erreur lors du chargement des produits récents: $e');
-      setState(() {
-        _isLoadingRecentProducts = false;
-      });
-    }
   }
 
   // NOUVELLE FONCTION: Calculer le prix avec une majoration de 30%
@@ -168,7 +120,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     required double totalPrice,
     required String paymentMethod,
   }) async {
-    const url = 'https://soko.com/json/commande.php';
+    const url = 'https://www.sokofast.com/backend/commande.php';
 
     try {
       final response = await http.post(
@@ -264,48 +216,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     backgroundColor: Colors.green,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () async {
+                  onPressed: () {
                     if (nameController.text.isEmpty ||
                         addressController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-<<<<<<< Updated upstream
-                        const SnackBar(
-                            content:
-                                Text("Veuillez remplir le nom et l'adresse"),
-                            duration: Duration(seconds: 3),
-                        ),
-=======
                         SnackBar(
                             content: Text(loc.productFillNameAddress)),
->>>>>>> Stashed changes
                       );
                       return;
                     }
-                    // Fermer le dialogue d'abord
                     Navigator.pop(context);
-                    // Attendre un court instant pour s'assurer que le dialogue est fermé
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    // Appeler la fonction
-                    try {
-                      _sendOrderViaWhatsApp(
-                        name: nameController.text,
-                        address: addressController.text,
-                        quantity: _quantity,
-                        product: product,
-                        total: total, // Utilise le total majoré
-                      );
-                    } catch (e) {
-                      print('Erreur lors de l\'envoi WhatsApp: $e');
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Erreur lors du traitement: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    }
+                    _sendOrderViaWhatsApp(
+                      name: nameController.text,
+                      address: addressController.text,
+                      quantity: _quantity,
+                      product: product,
+                      total: total, // Utilise le total majoré
+                    );
                   },
                 ),
                 const SizedBox(height: 12),
@@ -319,26 +246,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     backgroundColor: Colors.orange,
                     minimumSize: const Size(double.infinity, 50),
                   ),
-                  onPressed: () async {
-                    // Fermer le dialogue d'abord
+                  onPressed: () {
                     Navigator.pop(context);
-                    // Attendre un court instant pour s'assurer que le dialogue est fermé
-                    await Future.delayed(const Duration(milliseconds: 100));
-                    // Appeler la fonction
-                    try {
-                      _showMobileMoneyOptions(context, total); // Utilise le total majoré
-                    } catch (e) {
-                      print('Erreur lors de l\'affichage Mobile Money: $e');
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Erreur lors du traitement: ${e.toString()}'),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
-                      }
-                    }
+                    _showMobileMoneyOptions(context, total); // Utilise le total majoré
                   },
                 ),
               ],
@@ -696,25 +606,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 children: [
                   // Section d'information sur le produit
                   Padding(
-<<<<<<< Updated upstream
-                    padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
-                    child: Responsive.centerContent(
-                      context,
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            product['name'] ?? 'No name',
-                            style: GoogleFonts.actor(
-                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 22, tablet: 26, desktop: 30),
-                              color: Colors.black,
-=======
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          product['name'] ?? 'No name',
+                          product['name'] ?? loc.myProductsNoName,
                           style: GoogleFonts.actor(
                             fontSize: 22,
                             color: Theme.of(context).textTheme.bodyLarge?.color,
@@ -735,35 +632,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                             label: Text(loc.productAddToCart),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 50),
->>>>>>> Stashed changes
                             ),
-                          ),
-                          SizedBox(height: Responsive.getVerticalPadding(context) * 0.5),
-                          // Affichage du prix majoré
-                          Text(
-                            '${price.toStringAsFixed(2)} \$', 
-                            style: GoogleFonts.actor(
-                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 20, tablet: 24),
-                              color: Theme.of(context).primaryColor,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(height: Responsive.getVerticalPadding(context) * 0.5),
-                          OutlinedButton.icon(
-                              icon: const Icon(Icons.add_shopping_cart),
-                              label: const Text('Ajouter au panier'),
-                              style: OutlinedButton.styleFrom(
-                                minimumSize: Size(
-                                  double.infinity,
-                                  Responsive.getVerticalPadding(context) * 6.25,
-                                ),
-                                padding: EdgeInsets.symmetric(
-                                  vertical: Responsive.getVerticalPadding(context) * 2,
-                                ),
-                              ),
-                              onPressed: _addToCart),
-                        ],
-                      ),
+                            onPressed: _addToCart),
+                      ],
                     ),
                   ),
 
@@ -786,20 +657,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       children: [
                         // Onglet Description
                         SingleChildScrollView(
-<<<<<<< Updated upstream
-                          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
-                          child: Responsive.centerContent(
-                            context,
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Description',
-                                  style: TextStyle(
-                                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 22),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-=======
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -809,9 +666,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
->>>>>>> Stashed changes
                                 ),
-                                SizedBox(height: Responsive.getVerticalPadding(context)),
+                              ),
+                              const SizedBox(height: 8),
                               product['description'] != null &&
                                       product['description']
                                           .toString()
@@ -861,6 +718,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                               ),
                               const SizedBox(height: 24),
                               // Boutons d'action
+                                    // Boutons d'action
                               Row(
                                 children: [
                                   Expanded(
@@ -882,58 +740,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   const SizedBox(width: 16),
                                 ],
                               ),
-                              const SizedBox(height: 32),
-                              
-                              // 💡 NOUVEAU : Section produits récemment ajoutés
-                              if (_recentProducts.isNotEmpty || _isLoadingRecentProducts) ...[
-                                const Divider(height: 32),
-                                const Text(
-                                  'Produits récemment ajoutés',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                _isLoadingRecentProducts
-                                    ? const Center(
-                                        child: Padding(
-                                          padding: EdgeInsets.all(24.0),
-                                          child: CircularProgressIndicator(),
-                                        ),
-                                      )
-                                    : GridView.builder(
-                                        shrinkWrap: true,
-                                        physics: const NeverScrollableScrollPhysics(),
-                                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                          crossAxisCount: Responsive.getGridColumnCount(context),
-                                          crossAxisSpacing: Responsive.getGridSpacing(context),
-                                          mainAxisSpacing: Responsive.getGridSpacing(context) * 1.33,
-                                          childAspectRatio: Responsive.getProductAspectRatio(context),
-                                        ),
-                                        itemCount: _recentProducts.length,
-                                        itemBuilder: (context, index) {
-                                          final product = _recentProducts[index];
-                                          return GestureDetector(
-                                            onTap: () {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (_) => ProductDetailScreen(
-                                                    product: product,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            child: ProductCard(product: product),
-                                          );
-                                        },
-                                      ),
-                                const SizedBox(height: 24),
-                              ],
                             ],
-                          ),
                           ),
                         ),
 

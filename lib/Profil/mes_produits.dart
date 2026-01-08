@@ -6,11 +6,6 @@ import 'package:soko/Product/add.dart';
 import 'package:soko/Profil/EditProductScreen.dart';
 import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
-<<<<<<< Updated upstream
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:soko/utils/responsive.dart';
-=======
->>>>>>> Stashed changes
 
 class ImageViewerScreen extends StatelessWidget {
   final List<dynamic> images;
@@ -186,18 +181,20 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         });
       } else {
         final error = jsonDecode(response.body);
+        final loc = AppLocalizations.of(context);
         setState(() {
           _hasError = true;
-          _errorMessage = error['message'] ?? 'Erreur inconnue';
+          _errorMessage = error['message'] ?? loc.errorUnknown;
           _isLoading = false;
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       // En cas d'erreur réseau, utiliser le cache
       if (_products.isEmpty) {
         setState(() {
           _hasError = true;
-          _errorMessage = "Erreur de connexion: $e";
+          _errorMessage = loc.errorConnectionGeneric(e.toString());
           _isLoading = false;
         });
       } else {
@@ -347,10 +344,11 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         }
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("❌ Erreur: $e"),
+            content: Text(loc.genericErrorPrefix(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -641,11 +639,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             ),
           ),
           Expanded(
-            child: Responsive.centerContent(
-              context,
-              ListView.builder(
-                padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
-                itemCount: _products.length,
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: _products.length,
               itemBuilder: (context, index) {
                 final loc = AppLocalizations.of(context);
                 final product = _products[index];
@@ -816,7 +812,6 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                   ),
                 );
               },
-              ),
             ),
           ),
         ],

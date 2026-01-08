@@ -5,12 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // NOUVEL IMPORT SHIMMER
 import 'package:soko/Product/productCard.dart';
-<<<<<<< Updated upstream
-=======
 import 'package:soko/l10n/app_localizations.dart';
->>>>>>> Stashed changes
 import 'package:soko/style.dart'; // Contient 'loading' et 'primaryYellow'
-import 'package:soko/utils/responsive.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -69,9 +65,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
       _isSearching = true;
     });
   }
-  
+
   // Fonction utilitaire pour traiter les données (en ligne ou en cache) et mettre à jour l'état
-  void _updateProductState(List<dynamic> data) {
+  void _updateProductState(List<dynamic> data, {bool isOffline = false}) {
     Map<String, List<dynamic>> grouped = {};
 
     for (var product in data) {
@@ -98,51 +94,45 @@ class _ProductListScreenState extends State<ProductListScreen> {
     setState(() {
       isLoading = true;
       errorMessage = ''; // Réinitialiser avant la nouvelle tentative
+// _isOfflineMode = false; // variable non définie, supprimée
     });
-    
+
     final prefs = await SharedPreferences.getInstance();
 
     try {
       // Tenter de récupérer les produits depuis l'API (connexion)
       final response = await http.get(
-        Uri.parse(
+          Uri.parse(
               'https://www.babutik.com/wp-json/wc/v3/products?per_page=100'),
           headers: {
             'Authorization':
                 'Basic ${base64Encode(utf8.encode('ck_20c9eaf44a30b5028558551525a1b24201ce8293:cs_d2f987d16ac480a59f04a5fefdf563a269667ca3'))}',
-          }
-      );
+          });
 
       if (response.statusCode == 200) {
         // TÉLÉCHARGEMENT RÉUSSI: Mettre à jour le cache et afficher
-        await prefs.setString(_productsCacheKey, response.body); 
+        await prefs.setString(_productsCacheKey, response.body);
 
         final data = json.decode(response.body) as List<dynamic>;
-        _updateProductState(data); 
-        
+        _updateProductState(data, isOffline: false);
       } else {
         throw Exception('Erreur serveur: ${response.statusCode}');
       }
     } catch (e) {
       // ÉCHEC DU TÉLÉCHARGEMENT (Erreur réseau ou exception)
-      
+
       final cachedDataString = prefs.getString(_productsCacheKey);
-      
+
       if (cachedDataString != null && cachedDataString.isNotEmpty) {
         // Si le cache existe, l'utiliser et notifier l'utilisateur
         final data = json.decode(cachedDataString) as List<dynamic>;
-        _updateProductState(data);
-        
-        setState(() {
-           isLoading = false;
-           errorMessage = 'Mode hors ligne activé. Données potentiellement obsolètes.';
-        });
-        
+        _updateProductState(data, isOffline: true);
       } else {
         // Pas de connexion ET pas de cache : Afficher une erreur critique
         setState(() {
           isLoading = false;
-          errorMessage = 'Erreur de connexion et aucune donnée locale disponible.';
+          errorMessage = 'CONNECTION_ERROR';
+          // _isOfflineMode = false; // removed undefined variable
         });
       }
     }
@@ -153,7 +143,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     final bool isProductListEmpty = filteredProducts.isEmpty && !isLoading;
-    
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
@@ -167,7 +157,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   border: InputBorder.none,
                   hintStyle: TextStyle(color: Theme.of(context).hintColor),
                 ),
-                style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color),
+                style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color),
                 onChanged: _searchProducts,
               )
             : Image.asset(height: 55, 'assets/icon.png'),
@@ -196,9 +187,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           : isProductListEmpty && errorMessage.isEmpty
               ? Center(
                   child: Text(
-                    _isSearching
-                        ? loc.productEmptySearch
-                        : loc.productEmpty,
+                    _isSearching ? loc.productEmptySearch : loc.productEmpty,
                   ),
                 )
               : RefreshIndicator(
@@ -208,23 +197,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       // Affichage du message d'erreur ou du mode hors ligne en haut
                       if (errorMessage.isNotEmpty)
                         Padding(
-                          padding: EdgeInsets.symmetric(
-                            vertical: Responsive.getVerticalPadding(context),
-                            horizontal: Responsive.getHorizontalPadding(context),
-                          ),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8.0, horizontal: 16.0),
                           child: Text(
                             errorMessage.contains('Mode hors ligne')
                                 ? loc.offlineMode
                                 : loc.offlineError,
                             style: TextStyle(
-                              color: errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
+                              color: errorMessage.contains('Mode hors ligne')
+                                  ? Colors.orange
+                                  : Colors.red,
                               fontWeight: FontWeight.bold,
-                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14),
                             ),
                             textAlign: TextAlign.center,
                           ),
                         ),
-                      
+
                       // Liste des produits si elle n'est pas vide
                       if (!isProductListEmpty)
                         Expanded(
@@ -237,38 +225,36 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Padding(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: Responsive.getHorizontalPadding(context),
-                                      vertical: Responsive.getVerticalPadding(context) * 1.5,
-                                    ),
+                                    padding: const EdgeInsets.all(12.0),
                                     child: Text(
                                       categoryName,
-                                      style: TextStyle(
-                                        fontSize: Responsive.getAdaptiveFontSize(context, mobile: 20, tablet: 24, desktop: 28),
+                                      style: const TextStyle(
+                                        fontSize: 20,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
                                   ),
-                                  // 💡 RESPONSIVE : Affichage adaptatif selon la taille d'écran
-                                  GridView.builder(
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: Responsive.getHorizontalPadding(context) * 0.75,
-                                      vertical: Responsive.getVerticalPadding(context),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0, vertical: 8.0),
+                                    child: GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 0.68,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                      ),
+                                      itemCount: products.length,
+                                      itemBuilder: (context, index) {
+                                        return ProductCard(
+                                            product: products[index]);
+                                      },
                                     ),
-                                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: Responsive.getGridColumnCount(context),
-                                      childAspectRatio: Responsive.getProductAspectRatio(context),
-                                      crossAxisSpacing: Responsive.getGridSpacing(context),
-                                      mainAxisSpacing: Responsive.getGridSpacing(context),
-                                    ),
-                                    itemCount: products.length,
-                                    itemBuilder: (context, index) {
-                                      return ProductCard(product: products[index]);
-                                    },
                                   ),
-                                  const SizedBox(height: 16),
                                 ],
                               );
                             }).toList(),
@@ -299,18 +285,17 @@ class ShimmerLoadingList extends StatelessWidget {
       baseColor: baseColor,
       highlightColor: highlightColor,
       child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.generate(3, (i) { // Simule 3 sections de catégories
+          children: List.generate(3, (i) {
+            // Simule 3 sections de catégories
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 1. Simuler le Titre de Catégorie
                 Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 12.0,
-                  ),
+                  padding: const EdgeInsets.all(12.0),
                   child: Container(
                     width: 150,
                     height: 20,
@@ -320,32 +305,33 @@ class ShimmerLoadingList extends StatelessWidget {
                     ),
                   ),
                 ),
-                
-                // 💡 RESPONSIVE : Simuler la Grille Verticale adaptative
+
+                // 2. Simuler la Grille Verticale
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: Responsive.getHorizontalPadding(context) * 0.75),
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
                   child: GridView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: Responsive.getGridColumnCount(context),
-                      childAspectRatio: Responsive.getProductAspectRatio(context),
-                      crossAxisSpacing: Responsive.getGridSpacing(context),
-                      mainAxisSpacing: Responsive.getGridSpacing(context),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.68,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
                     ),
-                    itemCount: Responsive.getGridColumnCount(context) * 2, // Simule des produits selon le nombre de colonnes
+                    itemCount: 4, // Simule 4 produits par catégorie
                     itemBuilder: (context, index) {
-<<<<<<< Updated upstream
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Simuler l'Image (grande boîte)
-                          Container(
-                            height: 160,
-                            width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
+                          Expanded(
+                            child: Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 8),
@@ -353,72 +339,30 @@ class ShimmerLoadingList extends StatelessWidget {
                           Container(
                             width: double.infinity,
                             height: 10,
-                            color: Colors.white,
-                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            color: Theme.of(context).cardColor,
+                            margin: const EdgeInsets.symmetric(vertical: 2),
                           ),
                           // Simuler le Nom du Produit (Ligne 2)
                           Container(
                             width: 80,
                             height: 10,
-                            color: Colors.white,
-                            margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            color: Theme.of(context).cardColor,
+                            margin: const EdgeInsets.symmetric(vertical: 2),
                           ),
                           const SizedBox(height: 8),
                           // Simuler le Prix
                           Container(
                             width: 60,
                             height: 12,
-                            color: Colors.white,
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
+                            color: Theme.of(context).cardColor,
                           ),
+                          const SizedBox(height: 8),
                         ],
-=======
-                      return Container(
-                        width: 160,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Simuler l'Image (grande boîte)
-                            Container(
-                              height: 160,
-                              width: double.infinity,
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).cardColor,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            ),
-                            const SizedBox(height: 8),
-                            // Simuler le Nom du Produit (Ligne 1)
-                            Container(
-                              width: double.infinity,
-                              height: 10,
-                              color: Theme.of(context).cardColor,
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            ),
-                            // Simuler le Nom du Produit (Ligne 2)
-                            Container(
-                              width: 80,
-                              height: 10,
-                              color: Theme.of(context).cardColor,
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            ),
-                            const SizedBox(height: 8),
-                            // Simuler le Prix
-                            Container(
-                              width: 60,
-                              height: 12,
-                              color: Theme.of(context).cardColor,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                          ],
-                        ),
->>>>>>> Stashed changes
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
             );
           }),

@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:soko/Profil/delete_account_service.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/utils/responsive.dart';
 
 class DeleteAccountScreen extends StatefulWidget {
@@ -53,14 +54,16 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   /// Supprime le compte et toutes les données
   Future<void> _deleteAccount() async {
     final user = FirebaseAuth.instance.currentUser;
+    final loc = AppLocalizations.of(context)!;
+    
     if (user == null) {
-      _showError('Aucun utilisateur connecté');
+      _showError(loc.deleteAccountNoUser);
       return;
     }
 
     // Vérifier que l'utilisateur a tapé "SUPPRIMER"
-    if (_confirmController.text.trim().toUpperCase() != 'SUPPRIMER') {
-      _showError('Veuillez taper "SUPPRIMER" pour confirmer');
+    if (_confirmController.text.trim().toUpperCase() != loc.deleteAccountKeyword) {
+      _showError(loc.deleteAccountTypeConfirm);
       return;
     }
 
@@ -69,23 +72,17 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text(
-          '⚠️ Dernière Confirmation',
-          style: TextStyle(color: Colors.red),
+        title: Text(
+          loc.deleteAccountLastConfirmTitle,
+          style: const TextStyle(color: Colors.red),
         ),
-        content: const Text(
-          'Cette action est IRRÉVERSIBLE. Toutes vos données seront définitivement supprimées :\n\n'
-          '• Votre compte utilisateur\n'
-          '• Tous vos produits (si vendeur)\n'
-          '• Toutes vos commandes\n'
-          '• Tous vos commentaires\n'
-          '• Toutes vos données personnelles\n\n'
-          'Êtes-vous ABSOLUMENT SÛR de vouloir continuer ?',
+        content: Text(
+          loc.deleteAccountLastConfirmContent,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Annuler'),
+            child: Text(loc.deleteAccountCancel),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -115,12 +112,12 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                       context: context,
                       barrierDismissible: false,
                       builder: (context) => AlertDialog(
-                        title: const Text(
-                          '✅ Compte Supprimé',
-                          style: TextStyle(color: Colors.green),
+                        title: Text(
+                          loc.deleteAccountSuccessTitle,
+                          style: const TextStyle(color: Colors.green),
                         ),
-                        content: const Text(
-                          'Votre compte et toutes vos données ont été supprimés avec succès.',
+                        content: Text(
+                          loc.deleteAccountSuccessContent,
                         ),
                         actions: [
                           ElevatedButton(
@@ -133,7 +130,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                               //       (Route<dynamic> route) => false,
                               // );
                             },
-                            child: const Text('OK'),
+                            child: Text(loc.deleteAccountOk),
                           ),
                         ],
                       ),
@@ -146,14 +143,12 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                         context: context,
                         barrierDismissible: false,
                         builder: (context) => AlertDialog(
-                          title: const Text(
-                            '⚠️ Vérification',
-                            style: TextStyle(color: Colors.red),
+                          title: Text(
+                            loc.deleteAccountVerificationTitle,
+                            style: const TextStyle(color: Colors.red),
                           ),
-                          content: const Text(
-                            'Veuillez vous déconnecter et vous reconnecter à nouveau pour supprimer \nvotre compte.\n\n'
-                            'Rassurez-vous de vous reconnecter avec le meme compte pour le supprimer.'
-                            ,
+                          content: Text(
+                            loc.deleteAccountVerificationContent,
                           ),
                           actions: [
                             // TextButton(
@@ -168,14 +163,14 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                               onPressed: () async{
                                 Navigator.pop(context);
                               },
-                              child: const Text('OK'),
+                              child: Text(loc.deleteAccountOk),
                             ),
                           ],
                         ),
                       );
                     }
                     else{
-                      _showError(result['message'] ?? 'Erreur lors de la suppression');
+                      _showError(result['message'] ?? loc.deleteAccountGenericError);
                     }
                   }
               } catch (e) {
@@ -184,7 +179,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
                   // Le message d'erreur ci-bas est beaucoup plus proche
                   // du language humain que celui de dessus (juste une suggestion)
-                  _showError('Une erreur est survenue');
+                  _showError(loc.deleteAccountGenericError);
                 }
               } finally {
                 if (mounted) {
@@ -194,7 +189,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 }
               }
             },
-            child: const Text('OUI, SUPPRIMER'),
+            child: Text(loc.deleteAccountButtonConfirm),
           ),
         ],
       ),
@@ -217,13 +212,14 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final loc = AppLocalizations.of(context)!;
 
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.red[700],
-        title: const Text(
-          'Supprimer mon compte',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          loc.deleteAccountTitle,
+          style: const TextStyle(color: Colors.white),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -251,7 +247,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
               // Titre
               Text(
-                'Attention !',
+                loc.deleteAccountWarningTitle,
                 style: GoogleFonts.roboto(
                   fontSize: Responsive.getAdaptiveFontSize(context, mobile: 28, tablet: 32, desktop: 36),
                   fontWeight: FontWeight.bold,
@@ -273,7 +269,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'La suppression de votre compte est une action IRRÉVERSIBLE.',
+                    loc.deleteAccountWarningIntro,
                     style: GoogleFonts.roboto(
                       fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
                       fontWeight: FontWeight.bold,
@@ -282,18 +278,18 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   ),
                   SizedBox(height: Responsive.getVerticalPadding(context) * 1.5),
                   Text(
-                    'Toutes les données suivantes seront définitivement supprimées :',
+                    loc.deleteAccountWarningListIntro,
                     style: TextStyle(
                       fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14, tablet: 16),
                     ),
                   ),
                   SizedBox(height: Responsive.getVerticalPadding(context)),
-                  _buildWarningItem('Votre compte utilisateur'),
-                  _buildWarningItem('Tous vos produits (si vous êtes vendeur)'),
-                  _buildWarningItem('Toutes vos commandes'),
-                  _buildWarningItem('Tous vos commentaires et avis'),
-                  _buildWarningItem('Toutes vos données personnelles'),
-                  _buildWarningItem('Votre historique d\'achats'),
+                  _buildWarningItem(loc.deleteAccountWarningAccount),
+                  _buildWarningItem(loc.deleteAccountWarningProducts),
+                  _buildWarningItem(loc.deleteAccountWarningOrders),
+                  _buildWarningItem(loc.deleteAccountWarningComments),
+                  _buildWarningItem(loc.deleteAccountWarningPersonalData),
+                  _buildWarningItem(loc.deleteAccountWarningHistory),
                 ],
               ),
             ),
@@ -311,7 +307,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Compte à supprimer :',
+                      loc.deleteAccountAccountToDelete,
                       style: GoogleFonts.roboto(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
@@ -344,7 +340,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                           Icon(Icons.info_outline, color: Colors.orange[700]),
                           const SizedBox(width: 8),
                           Text(
-                            'Avertissements :',
+                            loc.deleteAccountWarningsLabel,
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
                               color: Colors.orange[900],
@@ -366,7 +362,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
 
             // Champ de confirmation
             Text(
-              'Pour confirmer, tapez "SUPPRIMER" ci-dessous :',
+              loc.deleteAccountInputLabel,
               style: GoogleFonts.roboto(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -376,7 +372,7 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
             TextField(
               controller: _confirmController,
               decoration: InputDecoration(
-                hintText: 'Tapez "SUPPRIMER"',
+                hintText: loc.deleteAccountInputHint,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -401,44 +397,30 @@ class _DeleteAccountScreenState extends State<DeleteAccountScreen> {
                 ),
               ),
               child: _isDeleting
-                  ? const Row(
+                  ? Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
+                        const SizedBox(
+                          width: 24,
+                          height: 24,
                           child: CircularProgressIndicator(
+                            color: Colors.white,
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         ),
-                        SizedBox(width: 12),
-                        Text('Suppression en cours...'),
+                        const SizedBox(width: 12),
+                        Text(loc.deleteAccountButtonProgress),
                       ],
                     )
-                  : const Text(
-                      'SUPPRIMER MON COMPTE',
-                      style: TextStyle(
+                  : Text(
+                      loc.deleteAccountButton,
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
             ),
-            const SizedBox(height: 16),
-
-            // Bouton d'annulation
-            OutlinedButton(
-              onPressed: _isDeleting
-                  ? null
-                  : () => Navigator.pop(context),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text('Annuler'),
-            ),
+            const SizedBox(height: 32),
           ],
         ),
         ),

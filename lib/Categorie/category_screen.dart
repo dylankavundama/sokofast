@@ -4,15 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // Importation nécessaire pour Shimmer
-<<<<<<< Updated upstream
-import 'package:soko/utils/responsive.dart';
-=======
 import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
 
 import 'category_item.dart';
 import 'products_by_category_screen.dart';
->>>>>>> Stashed changes
 
 // Clé de cache pour les catégories
 const String _categoriesCacheKey = 'cachedCategoriesData';
@@ -38,6 +34,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   List<dynamic> _categories = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  bool _isOfflineMode = false;
 
   @override
   void initState() {
@@ -46,7 +43,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   // Fonction utilitaire pour mettre à jour l'état et traiter les données
-  void _updateCategoryState(List<dynamic> data) {
+  void _updateCategoryState(List<dynamic> data, {bool isOffline = false}) {
     // Filtrer les catégories qui n'ont pas de nom, ou celles qui sont des catégories "non catégorisées" (id 0 ou 1)
     final filteredCategories = data.where((cat) {
       final name = cat['name']?.toString().toLowerCase() ?? '';
@@ -56,6 +53,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
     setState(() {
       _categories = filteredCategories;
       _isLoading = false;
+      _isOfflineMode = isOffline;
+      _errorMessage = '';
     });
   }
 
@@ -63,6 +62,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
+      _isOfflineMode = false;
     });
     
     final prefs = await SharedPreferences.getInstance();
@@ -81,7 +81,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
         // Succès : Mettre à jour le cache et l'état
         await prefs.setString(_categoriesCacheKey, response.body);
         final data = json.decode(response.body) as List<dynamic>;
-        _updateCategoryState(data);
+        _updateCategoryState(data, isOffline: false);
         
       } else {
         throw Exception('Erreur serveur: ${response.statusCode}');
@@ -93,16 +93,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
       if (cachedDataString != null && cachedDataString.isNotEmpty) {
         // Succès du cache : Utiliser les données locales et afficher un avertissement
         final data = json.decode(cachedDataString) as List<dynamic>;
-        _updateCategoryState(data);
-
-        setState(() {
-           _errorMessage = 'Mode hors ligne activé. Données potentiellement obsolètes.';
-        });
+        _updateCategoryState(data, isOffline: true);
         
       } else {
         // Échec total : Pas de connexion et pas de cache
         setState(() {
-          _errorMessage = 'Erreur de connexion et aucune donnée locale disponible.';
+          _errorMessage = 'CONNECTION_ERROR';
+          _isOfflineMode = false;
           _isLoading = false;
         });
       }
@@ -126,20 +123,16 @@ class _CategoryScreenState extends State<CategoryScreen> {
         child: Column(
           children: [
             // Affichage du message d'erreur ou d'avertissement hors ligne
-            if (_errorMessage.isNotEmpty)
+            if (_isOfflineMode || _errorMessage.isNotEmpty)
               Padding(
-                padding: EdgeInsets.symmetric(
-                  vertical: Responsive.getVerticalPadding(context),
-                  horizontal: Responsive.getHorizontalPadding(context),
-                ),
+                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                 child: Text(
-                  _errorMessage.contains('Mode hors ligne')
+                  _isOfflineMode
                       ? loc.offlineMode
-                      : loc.offlineError,
+                      : (_errorMessage == 'CONNECTION_ERROR' ? loc.offlineError : _errorMessage),
                   style: TextStyle(
-                    color: _errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
+                    color: _isOfflineMode ? Colors.orange : Colors.red,
                     fontWeight: FontWeight.bold,
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -149,15 +142,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
             Expanded(
               child: _isLoading
                   ? const ShimmerCategoryGrid() // UTILISATION DU SHIMMER
-                  : _categories.isEmpty && _errorMessage.isEmpty
+                  : _categories.isEmpty && !_isOfflineMode && _errorMessage.isEmpty
                       ? Center(child: Text(loc.categoriesEmpty))
                       : GridView.builder(
-                            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
-                            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: Responsive.getCategoryColumnCount(context),
-                              crossAxisSpacing: Responsive.getGridSpacing(context),
-                              mainAxisSpacing: Responsive.getGridSpacing(context),
-                              childAspectRatio: Responsive.getCategoryAspectRatio(context),
+                            padding: const EdgeInsets.all(10),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              childAspectRatio: 0.8,
                             ),
                             itemCount: _categories.length,
                             itemBuilder: (context, index) {
@@ -204,15 +197,15 @@ class ShimmerCategoryGrid extends StatelessWidget {
       baseColor: baseColor,
       highlightColor: highlightColor,
       child: GridView.builder(
-        padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
+        padding: const EdgeInsets.all(10),
         physics: const NeverScrollableScrollPhysics(), // Empêche le défilement
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: Responsive.getCategoryColumnCount(context),
-          crossAxisSpacing: Responsive.getGridSpacing(context),
-          mainAxisSpacing: Responsive.getGridSpacing(context),
-          childAspectRatio: Responsive.getCategoryAspectRatio(context),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: 0.8,
         ),
-        itemCount: Responsive.getCategoryColumnCount(context) * 3, // Simule des catégories selon le nombre de colonnes
+        itemCount: 6, // Simule un nombre fixe de catégories
         itemBuilder: (context, index) {
           return Container(
             decoration: BoxDecoration(

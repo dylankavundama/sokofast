@@ -1,11 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-<<<<<<< Updated upstream
-import 'package:soko/utils/responsive.dart';
-=======
 import 'package:soko/l10n/app_localizations.dart';
->>>>>>> Stashed changes
 // Importez vos autres dépendances (constantes, ProductCategory, etc.)
 
 // ⚠️ NOUVEL ÉCRAN DE MODIFICATION
@@ -136,73 +132,7 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
   Widget build(BuildContext context) {
     final loc = AppLocalizations.of(context);
     return Scaffold(
-<<<<<<< Updated upstream
-      appBar: AppBar(title: Text("Modifier : ${widget.product['name'] ?? 'Produit'}"),),
-      body: Responsive.centerContent(
-        context,
-        Padding(
-          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                // ➡️ Champ Nom
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: "Nom du produit"),
-                  validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
-                  style: TextStyle(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                  ),
-                ),
-                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
-                
-                // ➡️ Champ Prix
-                TextFormField(
-                  controller: _priceController,
-                  decoration: const InputDecoration(labelText: "Prix"),
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
-                  style: TextStyle(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                  ),
-                ),
-                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
-                
-                // ➡️ Champ Description
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: "Description"),
-                  maxLines: Responsive.isMobile(context) ? 3 : 5,
-                  style: TextStyle(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                  ),
-                ),
-                SizedBox(height: Responsive.getVerticalPadding(context) * 3.75),
-                
-                // ➡️ Bouton de Sauvegarde
-                ElevatedButton(
-                  onPressed: _isUpdating ? null : _handleUpdate,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: EdgeInsets.symmetric(
-                      vertical: Responsive.getVerticalPadding(context) * 1.875,
-                    ),
-                  ),
-                  child: _isUpdating
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          "Sauvegarder les modifications",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                          ),
-                        ),
-                ),
-              ],
-            ),
-=======
-      appBar: AppBar(title: Text(loc.editTitle(widget.product['name'] ?? 'Produit'))),
+      appBar: AppBar(title: Text(loc.editTitle(widget.product['name'] ?? loc.editDefaultTitle))),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -249,7 +179,6 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
                       ),
               ),
             ],
->>>>>>> Stashed changes
           ),
         ),
       ),

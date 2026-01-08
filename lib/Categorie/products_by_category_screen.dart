@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
  import 'package:http/http.dart' as http;
 import 'package:soko/style.dart';
-<<<<<<< Updated upstream
-import 'package:soko/utils/responsive.dart';
-=======
 import 'package:soko/l10n/app_localizations.dart';
->>>>>>> Stashed changes
 
 import '../Product/productDetailScreen.dart';
 
@@ -81,12 +77,12 @@ class _ProductsByCategoryScreenState extends State<ProductsByCategoryScreen> {
               : _products.isEmpty
                   ? Center(child: Text(loc.categoryNoProducts))
                   : GridView.builder(
-                      padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: Responsive.getGridColumnCount(context),
-                        crossAxisSpacing: Responsive.getGridSpacing(context),
-                        mainAxisSpacing: Responsive.getGridSpacing(context),
-                        childAspectRatio: Responsive.getProductAspectRatio(context),
+                      padding: EdgeInsets.all(10),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: 0.7,
                       ),
                       itemCount: _products.length,
                       itemBuilder: (context, index) {
@@ -127,20 +123,19 @@ final formattedPrice = newPrice.toStringAsFixed(2);
                                         ),
                                 ),
                                 Padding(
-                                  padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.5),
+                                  padding: EdgeInsets.all(8),
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         product['name'],
-                                        maxLines: Responsive.isMobile(context) ? 1 : 2,
+                                        maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          fontSize: Responsive.getAdaptiveFontSize(context, mobile: 14, tablet: 16),
                                         ),
                                       ),
-                                      SizedBox(height: Responsive.getVerticalPadding(context) * 0.5),
+                                      SizedBox(height: 4),
                                  // 1. Tente de convertir le prix (qui est une chaîne) en nombre. Utilise 0.0 si la conversion échoue.
 
 

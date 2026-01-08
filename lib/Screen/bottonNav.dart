@@ -20,11 +20,10 @@ class _BottomNavExampleState extends State<BottomNavExample> {
   int _currentIndex = 0;
   List<Map<String, dynamic>> cartItems = [];
 
-  // 💡 Utilisation de clés uniques pour chaque page pour éviter les problèmes de navigation
   final List<Widget> _pages = [
-    ProductListScreen(key: const ValueKey('home')),
-    CategoryScreen(key: const ValueKey('categories')),
-    const ProfileScreen(key: ValueKey('profile')),
+    ProductListScreen(),
+    CategoryScreen(),
+    const ProfileScreen(),
   ];
 
   @override
@@ -32,8 +31,6 @@ class _BottomNavExampleState extends State<BottomNavExample> {
     super.initState();
     _getTotalCartItems();
     _loadCartItems();
-    // 💡 S'assurer que l'index est à 0 (Accueil) au démarrage
-    _currentIndex = 0;
   }
 
   Future<void> _loadCartItems() async {
@@ -95,9 +92,14 @@ class _BottomNavExampleState extends State<BottomNavExample> {
         ],
       ),
       backgroundColor: backdColor,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _pages,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        switchInCurve: Curves.easeInOut,
+        switchOutCurve: Curves.easeInOut,
+        transitionBuilder: (Widget child, Animation<double> animation) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        child: _pages[_currentIndex],
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
@@ -105,11 +107,9 @@ class _BottomNavExampleState extends State<BottomNavExample> {
         selectedItemColor: backdColor,
         unselectedItemColor: Colors.grey,
         onTap: (index) {
-          if (index != _currentIndex) {
-            setState(() {
-              _currentIndex = index;
-            });
-          }
+          setState(() {
+            _currentIndex = index;
+          });
         },
         items: [
           BottomNavigationBarItem(

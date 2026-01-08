@@ -7,7 +7,6 @@ import 'package:soko/api_config.dart';
 import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
 import 'package:url_launcher/url_launcher.dart'; // Assurez-vous que primaryYellow et primaryDarkBlue sont définis ici
-import 'package:soko/utils/responsive.dart';
 
 // Définition de la structure de l'objet Order (pour la clarté)
 class Order {
@@ -291,7 +290,7 @@ class _OrdersPageState extends State<OrdersPage> {
         children: [
           // Filtre de Statut (Fonctionne pour le triage)
           Padding(
-            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.5),
+            padding: const EdgeInsets.all(8.0),
             child: DropdownButtonFormField<String>(
               decoration: InputDecoration(
                 labelText: loc.adminFilterStatus,
@@ -318,21 +317,11 @@ class _OrdersPageState extends State<OrdersPage> {
           Expanded(
             child: _isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : Responsive.centerContent(
-                    context,
-                    ListView.builder(
-                      itemCount: _orders.length,
-                      itemBuilder: (context, index) {
-                        final order = _orders[index];
+                : ListView.builder(
+                    itemCount: _orders.length,
+                    itemBuilder: (context, index) {
+                      final order = _orders[index];
 
-<<<<<<< Updated upstream
-                        // Détermine la valeur initiale du Dropdown pour la modification
-                        // C'EST LA CORRECTION CLÉ POUR ÉVITER LE CRASH.
-                        final String dropdownValue =
-                            _updatableStatuses.contains(order.status)
-                                ? order.status
-                                : 'EN COURS'; // Valeur de secours valide
-=======
                       final loc = AppLocalizations.of(context);
                       final updatableStatuses = _getUpdatableStatuses(loc);
                       // Détermine la valeur initiale du Dropdown pour la modification
@@ -341,15 +330,12 @@ class _OrdersPageState extends State<OrdersPage> {
                           updatableStatuses.contains(order.status)
                               ? order.status
                               : loc.adminStatusInProgress; // Valeur de secours valide
->>>>>>> Stashed changes
 
-                        return Card(
-                          margin: EdgeInsets.symmetric(
-                            vertical: Responsive.getVerticalPadding(context),
-                            horizontal: Responsive.getHorizontalPadding(context) * 0.625,
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.75),
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -431,8 +417,7 @@ class _OrdersPageState extends State<OrdersPage> {
                           ),
                         ),
                       );
-                      },
-                    ),
+                    },
                   ),
           ),
         ],

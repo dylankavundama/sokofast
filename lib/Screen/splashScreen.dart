@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:soko/Screen/bottonNav.dart';
-<<<<<<< Updated upstream
-import 'package:soko/utils/responsive.dart';
-=======
 import 'package:soko/Auth/loginPage.dart';
 import 'package:soko/l10n/app_localizations.dart';
->>>>>>> Stashed changes
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -26,14 +23,6 @@ class _SplashScreenState extends State<SplashScreen> {
     // Attente de 3 secondes pour l'effet d'écran de démarrage
     await Future.delayed(const Duration(seconds: 3));
 
-<<<<<<< Updated upstream
-    // Navigation directe vers l'écran principal sans exiger de compte
-    // Les utilisateurs peuvent accéder librement et se connecter plus tard si nécessaire
-    // ignore: use_build_context_synchronously
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => BottomNavExample()),
-=======
     // Vérifie l'état d'authentification de l'utilisateur avec Firebase
     final user = FirebaseAuth.instance.currentUser;
 
@@ -89,7 +78,6 @@ class _SplashScreenState extends State<SplashScreen> {
           ],
         );
       },
->>>>>>> Stashed changes
     );
   }
 
@@ -103,15 +91,20 @@ class _SplashScreenState extends State<SplashScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Padding(
-            padding: EdgeInsets.only(top: Responsive.isMobile(context) ? 300.0 : 200.0),
+            padding: const EdgeInsets.only(top: 300),
             child: Column(
               children: [
+                // const Center(
+                //   child: Text(
+                //     'BIENVENU SUR soko',
+                //     style: TextStyle(
+                //         fontSize: 18,
+                //         color: Colors.white,
+                //         fontWeight: FontWeight.bold),
+                //   ),
+                // ),
                 Center(
-                  child: Image.asset(
-                    'assets/icon.png',
-                    height: Responsive.isMobile(context) ? 150.0 : 200.0,
-                    width: Responsive.isMobile(context) ? 300.0 : 400.0,
-                  ),
+                  child: Image.asset(height: 150,width: 300, 'assets/icon.png'),
                 ),
               ],
             ),
@@ -123,21 +116,13 @@ class _SplashScreenState extends State<SplashScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-<<<<<<< Updated upstream
-                  'From ',
-                  style: GoogleFonts.abel(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 22),
-                    color: Colors.black,
-                  ),
-=======
                   loc.splashFrom,
                   style: GoogleFonts.abel(fontSize: 18, color: Colors.black),
->>>>>>> Stashed changes
                 ),
                 Text(
                   ' ${loc.splashCompany}',
                   style: GoogleFonts.abel(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 18, tablet: 22),
+                    fontSize: 18,
                     color: Colors.black,
                   ),
                 ),

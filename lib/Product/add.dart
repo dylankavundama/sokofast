@@ -5,16 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-<<<<<<< Updated upstream
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:soko/Profil/mes_produits.dart';
-import 'package:soko/services/user_service.dart';
-import 'package:soko/utils/responsive.dart';
-// Importez vos styles si nécessaire
-// import 'package:soko/style.dart'; 
-=======
 import 'package:soko/l10n/app_localizations.dart';
->>>>>>> Stashed changes
 
 // =======================================================
 // ⚠️ CONSTANTES DE CONFIGURATION - À METTRE À JOUR
@@ -65,7 +56,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   XFile? _selectedImage;
   bool _isPublishing = false;
-  bool _isCheckingStatus = true; // 💡 NOUVEAU : Indicateur de vérification du statut vendeur
 
   List<ProductCategory> _categories = [];
   ProductCategory? _selectedCategory;
@@ -85,7 +75,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     _mediaAuthHeaders = {"Authorization": "Basic $mediaAuth"};
 
     _fetchCategories();
-    _checkVendeurStatus(); // 💡 NOUVEAU : Vérifier le statut vendeur
   }
 
   @override
@@ -139,30 +128,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     if (_selectedImage == null) return null;
 
     try {
-<<<<<<< Updated upstream
-      // Vérifier la taille du fichier avant l'upload (limite: 20 Mo)
-      final file = File(_selectedImage!.path);
-      final fileSize = await file.length();
-      const maxSize = 20 * 1024 * 1024; // 20 Mo en bytes
-      
-      if (fileSize > maxSize) {
-        final sizeInMB = (fileSize / (1024 * 1024)).toStringAsFixed(2);
-        print("❌ Fichier trop volumineux: $sizeInMB Mo (limite: 20 Mo)");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("L'image est trop volumineuse ($sizeInMB Mo). Veuillez choisir une image de moins de 20 Mo."),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-            ),
-          );
-        }
-        return null;
-      }
-
-      print("📷 Tentative d'upload d'image (${(fileSize / (1024 * 1024)).toStringAsFixed(2)} Mo)...");
-=======
->>>>>>> Stashed changes
       var request = http.MultipartRequest(
         'POST',
         Uri.parse("$_baseUrl$_wpApiPath/media"),
@@ -189,24 +154,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
         print("✅ IMAGE UPLOADÉE AVEC SUCCÈS (ID: ${jsonResponse['id']})");
         return jsonResponse['id'];
       } else {
-<<<<<<< Updated upstream
-        String errorMessage = jsonResponse['message'] ?? 'Erreur inconnue';
-        
-        // Messages d'erreur plus explicites
-        if (errorMessage.contains('upload_max_filesize') || errorMessage.contains('exceeds')) {
-          errorMessage = 'L\'image est trop volumineuse. Limite actuelle: 20 Mo. Veuillez réduire la taille de l\'image ou contacter l\'administrateur pour augmenter la limite.';
-        } else if (errorMessage.contains('post_max_size')) {
-          errorMessage = 'Les données envoyées sont trop volumineuses (limite: 25 Mo). Veuillez réduire la taille de l\'image.';
-        }
-        
-        print("❌ ÉCHEC UPLOAD: $errorMessage");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Erreur upload image: $errorMessage"),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 5),
-=======
         final loc = AppLocalizations.of(context);
         print("❌ ÉCHEC UPLOAD: ${jsonResponse['message']}");
         if (mounted) {
@@ -214,30 +161,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
             SnackBar(
               content: Text(loc.addImageUploadError(jsonResponse['message'])),
               backgroundColor: Colors.orange,
->>>>>>> Stashed changes
             ),
           );
         }
         return null;
       }
     } catch (e) {
-<<<<<<< Updated upstream
-      String errorMsg = 'Erreur lors de l\'upload de l\'image';
-      if (e.toString().contains('upload_max_filesize') || e.toString().contains('exceeds')) {
-        errorMsg = 'L\'image est trop volumineuse. Limite actuelle: 20 Mo. Veuillez réduire la taille de l\'image.';
-      }
-      print("❌ EXCEPTION UPLOAD: $e");
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errorMsg),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
-=======
->>>>>>> Stashed changes
       return null;
     }
   }
@@ -310,40 +239,17 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
         final loc = AppLocalizations.of(context);
         if (mounted) {
-          // 💡 NOUVEAU : S'assurer que l'email est sauvegardé dans SharedPreferences
-          final currentUser = FirebaseAuth.instance.currentUser;
-          if (currentUser != null && currentUser.email != null) {
-            try {
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.setString('user_email', currentUser.email!);
-              await prefs.setString('user_name', currentUser.displayName ?? currentUser.email!.split('@')[0]);
-              print("✅ Données utilisateur sauvegardées pour Mes Produits");
-            } catch (e) {
-              print("⚠️ Erreur sauvegarde utilisateur: $e");
-            }
-          }
-          
-          // 💡 NOUVEAU : Afficher un message de succès
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
                 hasImage ? loc.addProductCreatedWithImage : loc.addProductCreatedWithoutImage,
               ),
               backgroundColor: hasImage ? Colors.green : Colors.blue,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-          
-          // 💡 NOUVEAU : Naviguer vers la page "Mes Produits" et actualiser
-          // On utilise pushReplacement pour remplacer cette page par "Mes Produits"
-          // La page "Mes Produits" se chargera automatiquement dans son initState
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const MyProductsScreen(),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
+        _resetForm();
       } else {
         final loc = AppLocalizations.of(context);
         final error = jsonDecode(response.body);
@@ -364,40 +270,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
-<<<<<<< Updated upstream
-  // =======================================================
-  // 💡 NOUVEAU : Vérifier si l'utilisateur est vendeur
-  // =======================================================
-  Future<void> _checkVendeurStatus() async {
-    setState(() {
-      _isCheckingStatus = true;
-    });
-    
-    final isVendeur = await UserService.isVendeur();
-    if (!isVendeur) {
-      // Si l'utilisateur n'est pas vendeur, rediriger vers le profil
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Seuls les vendeurs peuvent ajouter des produits.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-        Navigator.pop(context);
-      }
-    } else {
-      setState(() {
-        _isCheckingStatus = false;
-      });
-    }
-  }
-
-  // =======================================================
-  // 🧹 NETTOYAGE DU FORMULAIRE
-  // =======================================================
-=======
->>>>>>> Stashed changes
   void _resetForm() {
     _formKey.currentState?.reset();
     _nameController.clear();
@@ -411,24 +283,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< Updated upstream
-    // 💡 NOUVEAU : Afficher un loader pendant la vérification
-    if (_isCheckingStatus) {
-      return Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          title: const Text("Ajouter un produit"),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-    
-    // Note: 'primaryYellow' n'étant pas défini, j'utilise une couleur standard.
-=======
     final loc = AppLocalizations.of(context);
->>>>>>> Stashed changes
     final Color primaryYellow = Colors.yellow.shade700; 
     
     return Scaffold(
@@ -436,46 +291,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
         centerTitle: true,
         title: Text(loc.addProductTitle),
       ),
-<<<<<<< Updated upstream
-      body: Responsive.centerContent(
-        context,
-        Padding(
-          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context)),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                // 📝 Champs de saisie
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(labelText: "Nom du produit"),
-                  validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
-                  style: TextStyle(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                  ),
-                ),
-                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
-                TextFormField(
-                  controller: _priceController,
-                  decoration: const InputDecoration(labelText: "Prix"),
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
-                  style: TextStyle(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                  ),
-                ),
-                SizedBox(height: Responsive.getVerticalPadding(context) * 2),
-                TextFormField(
-                  controller: _descriptionController,
-                  decoration: const InputDecoration(labelText: "Description"),
-                  maxLines: Responsive.isMobile(context) ? 3 : 5,
-                  style: TextStyle(
-                    fontSize: Responsive.getAdaptiveFontSize(context, mobile: 16, tablet: 18),
-                  ),
-                ),
-                SizedBox(height: Responsive.getVerticalPadding(context) * 2.5),
-=======
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -508,7 +323,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 20),
->>>>>>> Stashed changes
 
               // 🏷️ SÉLECTION DE CATÉGORIE
               Text(loc.addCategoryLabel,
@@ -586,7 +400,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
             ],
           ),
-        ),
         ),
       ),
     );

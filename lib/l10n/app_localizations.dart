@@ -52,8 +52,10 @@ class AppLocalizations {
       'login_progress': 'Signing in...',
       'login_session_info':
           'Your session will be saved for automatic reconnection',
-      'login_error_account_exists': 'An account already exists with this email.',
-      'login_error_invalid_credential': 'Invalid credentials. Please try again.',
+      'login_error_account_exists':
+          'An account already exists with this email.',
+      'login_error_invalid_credential':
+          'Invalid credentials. Please try again.',
       'login_error_user_disabled': 'This account has been disabled.',
       'login_error_user_not_found': 'No account found with this email.',
       'login_error_wrong_password': 'Incorrect password.',
@@ -65,7 +67,8 @@ class AppLocalizations {
 
       // Splash
       'splash_create_account_title': 'Create an account',
-      'splash_create_account_content': 'Would you like to create an account to place orders?',
+      'splash_create_account_content':
+          'Would you like to create an account to place orders?',
       'splash_no': 'No',
       'splash_yes': 'Yes',
 
@@ -74,8 +77,7 @@ class AppLocalizations {
       'product_empty_search': 'No products found for this search.',
       'product_empty': 'No products are available.',
       'offline_mode': 'Offline mode enabled. Data may be outdated.',
-      'offline_error':
-          'Connection error and no local data available.',
+      'offline_error': 'Connection error and no local data available.',
 
       // Categories
       'categories_title': 'Categories',
@@ -89,15 +91,15 @@ class AppLocalizations {
       'product_total': 'Total:',
       'product_to_cart': 'Cart',
       'product_added_to_cart': 'Added to cart',
-      'product_login_required':
-          'Please log in to add to cart.',
+      'product_login_required': 'Please log in to add to cart.',
       'product_order_placed': 'Order placed',
       'product_order_failed': 'Failed to send order',
       'product_network_error': 'Network error',
       'product_order_complete': 'Complete order',
       'product_your_name': 'Your name',
       'product_your_address': 'Your address',
-      'product_order_summary': 'Product: {name}\nQuantity: {quantity}\nTotal: {total} \$',
+      'product_order_summary':
+          'Product: {name}\nQuantity: {quantity}\nTotal: {total} \$',
       'product_choose_payment': 'Choose payment method:',
       'product_fill_name_address': 'Please fill in the name and address',
       'product_payment_method': 'Payment method',
@@ -107,7 +109,8 @@ class AppLocalizations {
       'product_transaction_id_hint': 'Enter transaction code',
       'product_enter_transaction_id': 'Please enter the transaction ID',
       'product_confirm_order': 'Confirm order',
-      'product_whatsapp_message': 'Hello, my name is {name}.\n\nI would like to order:\n{product}\nQuantity: {quantity}\nUnit price with markup: {price} \$\n\nTotal: {total} \$\n\nAddress: {address}',
+      'product_whatsapp_message':
+          'Hello, my name is {name}.\n\nI would like to order:\n{product}\nQuantity: {quantity}\nUnit price with markup: {price} \$\n\nTotal: {total} \$\n\nAddress: {address}',
       'product_could_not_open_whatsapp': 'Could not open WhatsApp',
       'product_comments_tab': 'Comments',
       'product_description_tab': 'Description',
@@ -132,31 +135,55 @@ class AppLocalizations {
       'cart_dialog_title': 'Address and Contact',
       'cart_dialog_cancel': 'Cancel',
       'cart_dialog_confirm': 'Confirm',
-      'cart_need_address_or_gps':
-          'Please fill in the address or enable GPS.',
+      'cart_need_address_or_gps': 'Please fill in the address or enable GPS.',
       'cart_invalid_phone':
           'Mobile Money phone number missing or invalid (243xxxxxxxx).',
-      'cart_invalid_phone_format': 'Invalid phone number format (Ex: 243812345678).',
-      'cart_address_not_found': 'Delivery address not found. Please enable GPS or refine the address.',
+      'cart_invalid_phone_format':
+          'Invalid phone number format (Ex: 243812345678).',
+      'cart_address_not_found':
+          'Delivery address not found. Please enable GPS or refine the address.',
       'cart_total_zero': 'The total amount is zero or negative.',
-      'cart_payment_initiated': 'Payment initiated. Please validate the request on your phone (number: {phone}).',
+      'cart_payment_initiated':
+          'Payment initiated. Please validate the request on your phone (number: {phone}).',
       'cart_flexpay_failed': 'FlexPay payment initiation failed: {message}',
       'cart_unexpected_error': 'Unexpected error: {error}',
       'cart_order_send_failed': 'Failed to send order to server: {code}',
       'cart_order_success': 'Your order has been processed successfully!',
       'cart_order_process_error': 'Error: Unable to process order. {error}',
       'cart_whatsapp_message': 'Hello, I would like to place an order:',
-      'cart_whatsapp_product_line': '- {name} : {quantity} piece(s) at {price} \$ each',
+      'cart_whatsapp_product_line':
+          '- {name} : {quantity} piece(s) at {price} \$ each',
       'cart_whatsapp_total': 'Final total to pay: {total} \$',
       'cart_whatsapp_delivery': 'Delivery address: {address}',
       'cart_whatsapp_contact': 'My contact: {phone}',
       'cart_whatsapp_map_link': 'Map link: {link}',
-      'cart_whatsapp_gps_unavailable': 'GPS coordinates: Not available (text address used)',
+      'cart_whatsapp_gps_unavailable':
+          'GPS coordinates: Not available (text address used)',
       'cart_could_not_open_whatsapp': 'Could not open WhatsApp',
       'cart_gps_searching': 'Searching GPS position...',
       'cart_gps_acquired': 'GPS position acquired: {lat}, {lon}',
-      'cart_gps_unavailable_text': 'GPS position unavailable. Please enter the address.',
+      'cart_gps_unavailable_text':
+          'GPS position unavailable. Please enter the address.',
       'cart_retry_gps_location': 'Retry GPS location',
+      'cart_step_finalizing': 'Checkout Progress',
+      'cart_step_ville_select_error': 'Please select a city.',
+      'cart_step_fill_all': 'Please fill in the neighborhood and avenue.',
+      'cart_step_phone_invalid': 'Invalid phone number format.',
+      'cart_step_ville_title': 'City',
+      'cart_step_ville_hint': 'Select your city',
+      'cart_step_address_title': 'Address',
+      'cart_step_quartier_label': 'Neighborhood',
+      'cart_step_quartier_hint': 'Enter your neighborhood',
+      'cart_step_avenue_label': 'Avenue',
+      'cart_step_avenue_hint': 'Enter your avenue',
+      'cart_step_contact_title': 'Contact',
+      'cart_step_mobile_money_label': 'Mobile Money Number',
+      'cart_step_mobile_money_hint': '243xxxxxxxxx',
+      'cart_step_mobile_money_helper':
+          'Used for FlexPay payment and delivery contact',
+      'cart_step_continue': 'Next',
+      'cart_step_cancel': 'Back',
+      'common_unknown': 'Unknown',
 
       // Orders history
       'orders_title': 'My Orders',
@@ -189,11 +216,9 @@ class AppLocalizations {
       'my_products_clear_cache': 'Clear cache',
       'my_products_logout': 'Logout',
       'my_products_cache_cleared': 'Cache cleared',
-      'my_products_cannot_delete':
-          'You cannot delete this product',
+      'my_products_cannot_delete': 'You cannot delete this product',
       'my_products_confirm_delete_title': 'Confirm deletion',
-      'my_products_confirm_delete_content':
-          'Are you sure you want to delete',
+      'my_products_confirm_delete_content': 'Are you sure you want to delete',
       'my_products_cancel': 'Cancel',
       'my_products_delete': 'Delete',
       'my_products_deleted': 'deleted successfully',
@@ -202,7 +227,8 @@ class AppLocalizations {
       'my_products_please_login': 'Please log in',
       'my_products_offline_cache': '⚠️ Offline mode - cached data',
       'my_products_cannot_delete_product': '❌ You cannot delete this product',
-      'my_products_confirm_delete_question': 'Are you sure you want to delete "{name}"?',
+      'my_products_confirm_delete_question':
+          'Are you sure you want to delete "{name}"?',
       'my_products_logout_question': 'Are you sure you want to log out?',
       'my_products_clear_cache_text': 'Clear cache',
       'my_products_logout_text': 'Logout',
@@ -230,7 +256,8 @@ class AppLocalizations {
       'profile_name_updated': 'Username updated successfully!',
       'profile_name_update_error': 'Error: Unable to update name. {error}',
       'profile_support_title': 'Customer Service',
-      'profile_support_content': 'How would you like to contact our customer service?',
+      'profile_support_content':
+          'How would you like to contact our customer service?',
       'profile_send_email': 'Send an email',
       'profile_make_call': 'Make a call',
       'profile_send_whatsapp': 'Send a WhatsApp',
@@ -282,10 +309,13 @@ class AppLocalizations {
       'admin_update_failed': 'Update failed: {message}',
       'admin_network_error': 'Network error during update: {error}',
       'admin_could_not_open_map': 'Could not open map for {lat}, {lon}',
-      'admin_client_phone_not_found': 'Client phone number not found for this order.',
-      'admin_could_not_open_whatsapp': 'Could not open WhatsApp for number {phone}.',
+      'admin_client_phone_not_found':
+          'Client phone number not found for this order.',
+      'admin_could_not_open_whatsapp':
+          'Could not open WhatsApp for number {phone}.',
       'admin_whatsapp_error': 'Error launching WhatsApp: {error}',
-      'admin_whatsapp_message': 'Hello, I am contacting you regarding your order #{id}. It is currently at status: {status}.',
+      'admin_whatsapp_message':
+          'Hello, I am contacting you regarding your order #{id}. It is currently at status: {status}.',
 
       // Theme
       'theme_title': 'Theme',
@@ -340,23 +370,78 @@ class AppLocalizations {
       'add_category_error': 'Error loading categories. Check WC keys.',
       'add_image_upload_error': 'Image upload error: {message}',
       'add_category_required_warning': '⚠️ Please select a category.',
-      'add_image_upload_failed': 'Image upload failed. Product creation stopped.',
+      'add_image_upload_failed':
+          'Image upload failed. Product creation stopped.',
       'add_product_created_with_image': '✅ Product created with image!',
       'add_product_created_without_image': '✅ Product created without image.',
       'add_product_creation_error': 'Product creation error: {message}',
       'add_publication_error': 'Publication error: {error}',
+
+      // Common - Errors
+      'error_unknown': 'Unknown error',
+      'error_connection_generic': 'Connection error: {error}',
+      'generic_error_prefix': 'Error: {error}',
+
+      // Edit Product - Additional
+      'edit_api_error': 'API Error: {message}',
+      'edit_default_title': 'Product',
+
+      // Delete Account
+      'delete_account_title': 'Delete my account',
+      'delete_account_no_user': 'No user connected',
+      'delete_account_type_confirm': 'Please type "DELETE" to confirm',
+      'delete_account_keyword': 'DELETE',
+      'delete_account_last_confirm_title': '⚠️ Final Confirmation',
+      'delete_account_last_confirm_content':
+          'This action is IRREVERSIBLE. All your data will be permanently deleted:\n\n• Your user account\n• All your products (if vendor)\n• All your orders\n• All your comments\n• All your personal data\n\nAre you ABSOLUTELY SURE you want to continue?',
+      'delete_account_cancel': 'Cancel',
+      'delete_account_ok': 'OK',
+      'delete_account_success_title': '✅ Account Deleted',
+      'delete_account_success_content':
+          'Your account and all your data have been deleted successfully.',
+      'delete_account_requires_login':
+          '❌ This operation requires recent authentication',
+      'delete_account_verification_title': '⚠️ Verification',
+      'delete_account_verification_content':
+          'Please log out and log in again to delete your account.\n\nMake sure to log in with the same account to delete it.',
+      'delete_account_generic_error': 'An error occurred',
+      'delete_account_button_confirm': 'YES, DELETE',
+      'delete_account_warning_title': 'Warning!',
+      'delete_account_warning_intro':
+          'Deleting your account is an IRREVERSIBLE action.',
+      'delete_account_warning_list_intro':
+          'All the following data will be permanently deleted:',
+      'delete_account_warning_account': 'Your user account',
+      'delete_account_warning_products':
+          'All your products (if you are a vendor)',
+      'delete_account_warning_orders': 'All your orders',
+      'delete_account_warning_comments': 'All your comments and reviews',
+      'delete_account_warning_personal_data': 'All your personal data',
+      'delete_account_warning_history': 'Your purchase history',
+      'delete_account_account_to_delete': 'Account to delete:',
+      'delete_account_warnings_label': 'Warnings:',
+      'delete_account_input_label': 'To confirm, type "DELETE" below:',
+      'delete_account_input_hint': 'Type "DELETE"',
+      'delete_account_button_progress': 'Deleting...',
+      'delete_account_button': 'DELETE MY ACCOUNT',
+
+      // Profile - Errors
+      'error_open_email': 'Could not open email application',
+      'error_make_call': 'Could not make a call',
+      'error_open_whatsapp': 'Could not open WhatsApp',
     },
     'fr': {
       'language_title': 'Choisissez votre langue',
-      'language_subtitle': 'Vous pourrez la changer plus tard dans les réglages.',
+      'language_subtitle':
+          'Vous pourrez la modifier plus tard dans les paramètres.',
       'language_french': 'Français',
       'language_english': 'Anglais',
       'language_continue': 'Continuer',
 
-      'splash_from': 'From',
+      'splash_from': 'De',
       'splash_company': 'Next Byte Technology',
 
-      'onb1_title': 'Bienvenue chez SOKO FAST',
+      'onb1_title': 'Bienvenue sur SOKO FAST',
       'onb1_desc':
           'Découvrez notre vaste sélection de gadgets, ordinateurs et accessoires high‑tech.',
       'onb2_title': 'Une technologie à portée de main',
@@ -431,6 +516,25 @@ class AppLocalizations {
           'Veuillez remplir l\'adresse ou activer le GPS.',
       'cart_invalid_phone':
           'Numéro de téléphone FlexPay manquant ou invalide (243xxxxxxxx).',
+      'cart_step_finalizing': 'Finalisation de la commande',
+      'cart_step_ville_select_error': 'Veuillez sélectionner une ville.',
+      'cart_step_fill_all': 'Veuillez remplir le quartier et l\'avenue.',
+      'cart_step_phone_invalid': 'Format de numéro de téléphone invalide.',
+      'cart_step_ville_title': 'Ville',
+      'cart_step_ville_hint': 'Sélectionnez votre ville',
+      'cart_step_address_title': 'Adresse',
+      'cart_step_quartier_label': 'Quartier',
+      'cart_step_quartier_hint': 'Entrez votre quartier',
+      'cart_step_avenue_label': 'Avenue',
+      'cart_step_avenue_hint': 'Entrez votre avenue',
+      'cart_step_contact_title': 'Contact',
+      'cart_step_mobile_money_label': 'Numéro Mobile Money',
+      'cart_step_mobile_money_hint': '243xxxxxxxxx',
+      'cart_step_mobile_money_helper':
+          'Utilisé pour le paiement FlexPay et le contact livraison',
+      'cart_step_continue': 'Suivant',
+      'cart_step_cancel': 'Retour',
+      'common_unknown': 'Inconnu',
 
       // Orders history
       'orders_title': 'Mes Commandes',
@@ -449,8 +553,7 @@ class AppLocalizations {
       'my_products_error_loading': 'Erreur de chargement',
       'my_products_retry': 'Réessayer',
       'my_products_none': 'Aucun produit',
-      'my_products_none_desc':
-          'Vous n\'avez pas encore créé de produits',
+      'my_products_none_desc': 'Vous n\'avez pas encore créé de produits',
       'my_products_create_first': 'Créer mon premier produit',
       'my_products_connected_as': 'Connecté en tant que :',
       'my_products_refresh': 'Actualiser',
@@ -458,8 +561,7 @@ class AppLocalizations {
       'my_products_clear_cache': 'Vider le cache',
       'my_products_logout': 'Déconnexion',
       'my_products_cache_cleared': 'Cache vidé',
-      'my_products_cannot_delete':
-          'Vous ne pouvez pas supprimer ce produit',
+      'my_products_cannot_delete': 'Vous ne pouvez pas supprimer ce produit',
       'my_products_confirm_delete_title': 'Confirmer la suppression',
       'my_products_confirm_delete_content':
           'Êtes-vous sûr de vouloir supprimer',
@@ -482,9 +584,11 @@ class AppLocalizations {
       'profile_change_name': 'Changer le nom',
       'profile_save': 'Enregistrer',
       'profile_name_updated': 'Nom d\'utilisateur mis à jour avec succès!',
-      'profile_name_update_error': 'Erreur: Impossible de mettre à jour le nom. {error}',
+      'profile_name_update_error':
+          'Erreur: Impossible de mettre à jour le nom. {error}',
       'profile_support_title': 'Service Client',
-      'profile_support_content': 'Comment souhaitez-vous contacter notre service client ?',
+      'profile_support_content':
+          'Comment souhaitez-vous contacter notre service client ?',
       'profile_send_email': 'Envoyer un email',
       'profile_make_call': 'Passer un appel',
       'profile_send_whatsapp': 'Envoyer un WhatsApp',
@@ -522,7 +626,8 @@ class AppLocalizations {
 
       // Admin - Login livreur
       'admin_login_error': 'Erreur : Identifiant d\'utilisateur non autorisé.',
-      'admin_login_instruction': 'Veuillez entrer votre Identifiant pour accéder aux commandes.',
+      'admin_login_instruction':
+          'Veuillez entrer votre Identifiant pour accéder aux commandes.',
       'admin_login_id_label': 'Votre Identifiant',
       'admin_login_id_hint': 'Ex: Liv_Billy',
       'admin_login_access': 'Accéder',
@@ -535,11 +640,15 @@ class AppLocalizations {
       'admin_status_updated': 'Statut mis à jour à {status}.',
       'admin_update_failed': 'Échec de la mise à jour: {message}',
       'admin_network_error': 'Erreur réseau lors de la mise à jour: {error}',
-      'admin_could_not_open_map': 'Impossible d\'ouvrir la carte pour {lat}, {lon}',
-      'admin_client_phone_not_found': 'Numéro de client non trouvé pour cette commande.',
-      'admin_could_not_open_whatsapp': 'Impossible d\'ouvrir WhatsApp pour le numéro {phone}.',
+      'admin_could_not_open_map':
+          'Impossible d\'ouvrir la carte pour {lat}, {lon}',
+      'admin_client_phone_not_found':
+          'Numéro de client non trouvé pour cette commande.',
+      'admin_could_not_open_whatsapp':
+          'Impossible d\'ouvrir WhatsApp pour le numéro {phone}.',
       'admin_whatsapp_error': 'Erreur lors du lancement de WhatsApp: {error}',
-      'admin_whatsapp_message': 'Bonjour, je vous contacte au sujet de votre commande n° {id}. Elle est actuellement au statut : {status}.',
+      'admin_whatsapp_message':
+          'Bonjour, je vous contacte au sujet de votre commande n° {id}. Elle est actuellement au statut : {status}.',
 
       // Theme
       'theme_title': 'Thème',
@@ -591,22 +700,90 @@ class AppLocalizations {
 
       // Add Product - Additional
       'add_category_load_failed': 'Échec du chargement des catégories: {code}',
-      'add_category_error': 'Erreur de chargement des catégories. Vérifiez les clés WC.',
+      'add_category_error':
+          'Erreur de chargement des catégories. Vérifiez les clés WC.',
       'add_image_upload_error': 'Erreur upload image: {message}',
-      'add_category_required_warning': '⚠️ Veuillez sélectionner une catégorie.',
-      'add_image_upload_failed': 'Échec de l\'upload d\'image. Arrêt de la création du produit.',
+      'add_category_required_warning':
+          '⚠️ Veuillez sélectionner une catégorie.',
+      'add_image_upload_failed':
+          'Échec de l\'upload d\'image. Arrêt de la création du produit.',
       'add_product_created_with_image': '✅ Produit créé avec image!',
       'add_product_created_without_image': '✅ Produit créé sans image.',
       'add_product_creation_error': 'Erreur création produit: {message}',
       'add_publication_error': 'Erreur de publication: {error}',
+
+      // Common - Payment & Status
+      'payment_method_mpesa': 'Mpesa',
+      'payment_method_orange': 'Orange Money',
+      'payment_method_airtel': 'Airtel Money',
+      'status_pending': 'En attente',
+      'status_unknown': 'Inconnu',
+      'status_cancelled': 'Annulé',
+      'status_in_progress': 'En cours',
+      'status_completed': 'Terminé',
+      'product_unknown': 'Produit inconnu',
+      'unspecified': 'Non spécifié',
+
+      // Common - Errors
+      'error_unknown': 'Erreur inconnue',
+      'error_connection_generic': 'Erreur de connexion : {error}',
+      'generic_error_prefix': 'Erreur : {error}',
+
+      // Edit Product - Additional
+      'edit_api_error': 'Erreur API : {message}',
+      'edit_default_title': 'Produit',
+
+      // Delete Account
+      'delete_account_title': 'Supprimer mon compte',
+      'delete_account_no_user': 'Aucun utilisateur connecté',
+      'delete_account_type_confirm':
+          'Veuillez taper "SUPPRIMER" pour confirmer',
+      'delete_account_keyword': 'SUPPRIMER',
+      'delete_account_last_confirm_title': '⚠️ Dernière Confirmation',
+      'delete_account_last_confirm_content':
+          'Cette action est IRRÉVERSIBLE. Toutes vos données seront définitivement supprimées :\n\n• Votre compte utilisateur\n• Tous vos produits (si vendeur)\n• Toutes vos commandes\n• Tous vos commentaires\n• Toutes vos données personnelles\n\nÊtes-vous ABSOLUMENT SÛR de vouloir continuer ?',
+      'delete_account_cancel': 'Annuler',
+      'delete_account_ok': 'OK',
+      'delete_account_success_title': '✅ Compte Supprimé',
+      'delete_account_success_content':
+          'Votre compte et toutes vos données ont été supprimés avec succès.',
+      'delete_account_requires_login':
+          '❌ Cette opération requièrt une authentification récente',
+      'delete_account_verification_title': '⚠️ Vérification',
+      'delete_account_verification_content':
+          'Veuillez vous déconnecter et vous reconnecter à nouveau pour supprimer \nvotre compte.\n\nRassurez-vous de vous reconnecter avec le meme compte pour le supprimer.',
+      'delete_account_generic_error': 'Une erreur est survenue',
+      'delete_account_button_confirm': 'OUI, SUPPRIMER',
+      'delete_account_warning_title': 'Attention !',
+      'delete_account_warning_intro':
+          'La suppression de votre compte est une action IRRÉVERSIBLE.',
+      'delete_account_warning_list_intro':
+          'Toutes les données suivantes seront définitivement supprimées :',
+      'delete_account_warning_account': 'Votre compte utilisateur',
+      'delete_account_warning_products':
+          'Tous vos produits (si vous êtes vendeur)',
+      'delete_account_warning_orders': 'Toutes vos commandes',
+      'delete_account_warning_comments': 'Tous vos commentaires et avis',
+      'delete_account_warning_personal_data': 'Toutes vos données personnelles',
+      'delete_account_warning_history': 'Votre historique d\'achats',
+      'delete_account_account_to_delete': 'Compte à supprimer :',
+      'delete_account_warnings_label': 'Avertissements :',
+      'delete_account_input_label':
+          'Pour confirmer, tapez "SUPPRIMER" ci-dessous :',
+      'delete_account_input_hint': 'Tapez "SUPPRIMER"',
+      'delete_account_button_progress': 'Suppression en cours...',
+      'delete_account_button': 'SUPPRIMER MON COMPTE',
+
+      // Profile - Errors
+      'error_open_email': 'Impossible d\'ouvrir l\'application email',
+      'error_make_call': 'Impossible de passer un appel',
+      'error_open_whatsapp': 'Impossible d\'ouvrir WhatsApp',
     },
   };
 
   String _t(String key) {
     final code = locale.languageCode;
-    return _localizedValues[code]?[key] ??
-        _localizedValues['en']![key] ??
-        key;
+    return _localizedValues[code]?[key] ?? _localizedValues['en']![key] ?? key;
   }
 
   String get languageTitle => _t('language_title');
@@ -641,7 +818,8 @@ class AppLocalizations {
   String get loginProgress => _t('login_progress');
   String get loginSessionInfo => _t('login_session_info');
   String get loginErrorAccountExists => _t('login_error_account_exists');
-  String get loginErrorInvalidCredential => _t('login_error_invalid_credential');
+  String get loginErrorInvalidCredential =>
+      _t('login_error_invalid_credential');
   String get loginErrorUserDisabled => _t('login_error_user_disabled');
   String get loginErrorUserNotFound => _t('login_error_user_not_found');
   String get loginErrorWrongPassword => _t('login_error_wrong_password');
@@ -677,21 +855,36 @@ class AppLocalizations {
   String get productToCart => _t('product_to_cart');
   String get productAddedToCart => _t('product_added_to_cart');
   String get productLoginRequired => _t('product_login_required');
-  String productOrderSummary(String name, int quantity, String total) => _t('product_order_summary').replaceAll('{name}', name).replaceAll('{quantity}', quantity.toString()).replaceAll('{total}', total);
+  String productOrderSummary(String name, int quantity, String total) =>
+      _t('product_order_summary')
+          .replaceAll('{name}', name)
+          .replaceAll('{quantity}', quantity.toString())
+          .replaceAll('{total}', total);
   String get productOrderComplete => _t('product_order_complete');
   String get productYourName => _t('product_your_name');
   String get productYourAddress => _t('product_your_address');
   String get productChoosePayment => _t('product_choose_payment');
   String get productFillNameAddress => _t('product_fill_name_address');
   String get productPaymentMethod => _t('product_payment_method');
-  String productPaymentNumber(String number) => _t('product_payment_number').replaceAll('{number}', number);
-  String productNumberCopied(String method) => _t('product_number_copied').replaceAll('{method}', method);
+  String productPaymentNumber(String number) =>
+      _t('product_payment_number').replaceAll('{number}', number);
+  String productNumberCopied(String method) =>
+      _t('product_number_copied').replaceAll('{method}', method);
   String get productTransactionId => _t('product_transaction_id');
   String get productTransactionIdHint => _t('product_transaction_id_hint');
   String get productEnterTransactionId => _t('product_enter_transaction_id');
   String get productConfirmOrder => _t('product_confirm_order');
-  String productWhatsappMessage(String name, String product, int quantity, String price, String total, String address) => _t('product_whatsapp_message').replaceAll('{name}', name).replaceAll('{product}', product).replaceAll('{quantity}', quantity.toString()).replaceAll('{price}', price).replaceAll('{total}', total).replaceAll('{address}', address);
-  String get productCouldNotOpenWhatsapp => _t('product_could_not_open_whatsapp');
+  String productWhatsappMessage(String name, String product, int quantity,
+          String price, String total, String address) =>
+      _t('product_whatsapp_message')
+          .replaceAll('{name}', name)
+          .replaceAll('{product}', product)
+          .replaceAll('{quantity}', quantity.toString())
+          .replaceAll('{price}', price)
+          .replaceAll('{total}', total)
+          .replaceAll('{address}', address);
+  String get productCouldNotOpenWhatsapp =>
+      _t('product_could_not_open_whatsapp');
   String get productCommentsTab => _t('product_comments_tab');
   String get productDescriptionTab => _t('product_description_tab');
   String get productOrderPlaced => _t('product_order_placed');
@@ -722,24 +915,56 @@ class AppLocalizations {
   String get cartInvalidPhoneFormat => _t('cart_invalid_phone_format');
   String get cartAddressNotFound => _t('cart_address_not_found');
   String get cartTotalZero => _t('cart_total_zero');
-  String cartPaymentInitiated(String phone) => _t('cart_payment_initiated').replaceAll('{phone}', phone);
-  String cartFlexpayFailed(String message) => _t('cart_flexpay_failed').replaceAll('{message}', message);
-  String cartUnexpectedError(String error) => _t('cart_unexpected_error').replaceAll('{error}', error);
-  String cartOrderSendFailed(String code) => _t('cart_order_send_failed').replaceAll('{code}', code);
+  String cartPaymentInitiated(String phone) =>
+      _t('cart_payment_initiated').replaceAll('{phone}', phone);
+  String cartFlexpayFailed(String message) =>
+      _t('cart_flexpay_failed').replaceAll('{message}', message);
+  String cartUnexpectedError(String error) =>
+      _t('cart_unexpected_error').replaceAll('{error}', error);
+  String cartOrderSendFailed(String code) =>
+      _t('cart_order_send_failed').replaceAll('{code}', code);
   String get cartOrderSuccess => _t('cart_order_success');
-  String cartOrderProcessError(String error) => _t('cart_order_process_error').replaceAll('{error}', error);
+  String cartOrderProcessError(String error) =>
+      _t('cart_order_process_error').replaceAll('{error}', error);
   String get cartWhatsappMessage => _t('cart_whatsapp_message');
-  String cartWhatsappProductLine(String name, int quantity, String price) => _t('cart_whatsapp_product_line').replaceAll('{name}', name).replaceAll('{quantity}', quantity.toString()).replaceAll('{price}', price);
-  String cartWhatsappTotal(String total) => _t('cart_whatsapp_total').replaceAll('{total}', total);
-  String cartWhatsappDelivery(String address) => _t('cart_whatsapp_delivery').replaceAll('{address}', address);
-  String cartWhatsappContact(String phone) => _t('cart_whatsapp_contact').replaceAll('{phone}', phone);
-  String cartWhatsappMapLink(String link) => _t('cart_whatsapp_map_link').replaceAll('{link}', link);
+  String cartWhatsappProductLine(String name, int quantity, String price) =>
+      _t('cart_whatsapp_product_line')
+          .replaceAll('{name}', name)
+          .replaceAll('{quantity}', quantity.toString())
+          .replaceAll('{price}', price);
+  String cartWhatsappTotal(String total) =>
+      _t('cart_whatsapp_total').replaceAll('{total}', total);
+  String cartWhatsappDelivery(String address) =>
+      _t('cart_whatsapp_delivery').replaceAll('{address}', address);
+  String cartWhatsappContact(String phone) =>
+      _t('cart_whatsapp_contact').replaceAll('{phone}', phone);
+  String cartWhatsappMapLink(String link) =>
+      _t('cart_whatsapp_map_link').replaceAll('{link}', link);
   String get cartWhatsappGpsUnavailable => _t('cart_whatsapp_gps_unavailable');
   String get cartCouldNotOpenWhatsapp => _t('cart_could_not_open_whatsapp');
   String get cartGpsSearching => _t('cart_gps_searching');
-  String cartGpsAcquired(String lat, String lon) => _t('cart_gps_acquired').replaceAll('{lat}', lat).replaceAll('{lon}', lon);
+  String cartGpsAcquired(String lat, String lon) =>
+      _t('cart_gps_acquired').replaceAll('{lat}', lat).replaceAll('{lon}', lon);
   String get cartGpsUnavailableText => _t('cart_gps_unavailable_text');
   String get cartRetryGpsLocation => _t('cart_retry_gps_location');
+  String get cartStepFinalizing => _t('cart_step_finalizing');
+  String get cartStepVilleSelectError => _t('cart_step_ville_select_error');
+  String get cartStepFillAll => _t('cart_step_fill_all');
+  String get cartStepPhoneInvalid => _t('cart_step_phone_invalid');
+  String get cartStepVilleTitle => _t('cart_step_ville_title');
+  String get cartStepVilleHint => _t('cart_step_ville_hint');
+  String get cartStepAddressTitle => _t('cart_step_address_title');
+  String get cartStepQuartierLabel => _t('cart_step_quartier_label');
+  String get cartStepQuartierHint => _t('cart_step_quartier_hint');
+  String get cartStepAvenueLabel => _t('cart_step_avenue_label');
+  String get cartStepAvenueHint => _t('cart_step_avenue_hint');
+  String get cartStepContactTitle => _t('cart_step_contact_title');
+  String get cartStepMobileMoneyLabel => _t('cart_step_mobile_money_label');
+  String get cartStepMobileMoneyHint => _t('cart_step_mobile_money_hint');
+  String get cartStepMobileMoneyHelper => _t('cart_step_mobile_money_helper');
+  String get cartStepContinue => _t('cart_step_continue');
+  String get cartStepCancel => _t('cart_step_cancel');
+  String get commonUnknown => _t('common_unknown');
 
   // Orders
   String get ordersTitle => _t('orders_title');
@@ -754,10 +979,13 @@ class AppLocalizations {
   String get ordersTotal => _t('orders_total');
   String get ordersMustLogin => _t('orders_must_login');
   String get ordersNotFoundMessage => _t('orders_not_found_message');
-  String ordersServerError(String code) => _t('orders_server_error').replaceAll('{code}', code);
-  String ordersConnectionError(String error) => _t('orders_connection_error').replaceAll('{error}', error);
+  String ordersServerError(String code) =>
+      _t('orders_server_error').replaceAll('{code}', code);
+  String ordersConnectionError(String error) =>
+      _t('orders_connection_error').replaceAll('{error}', error);
   String get ordersNotFound => _t('orders_not_found');
-  String ordersOrderNumber(String id) => _t('orders_order_number').replaceAll('{id}', id);
+  String ordersOrderNumber(String id) =>
+      _t('orders_order_number').replaceAll('{id}', id);
 
   // My products
   String get myProductsTitle => _t('my_products_title');
@@ -784,21 +1012,26 @@ class AppLocalizations {
   String get myProductsUserError => _t('my_products_user_error');
   String get myProductsPleaseLogin => _t('my_products_please_login');
   String get myProductsOfflineCache => _t('my_products_offline_cache');
-  String get myProductsCannotDeleteProduct => _t('my_products_cannot_delete_product');
-  String myProductsConfirmDeleteQuestion(String name) => _t('my_products_confirm_delete_question').replaceAll('{name}', name);
+  String get myProductsCannotDeleteProduct =>
+      _t('my_products_cannot_delete_product');
+  String myProductsConfirmDeleteQuestion(String name) =>
+      _t('my_products_confirm_delete_question').replaceAll('{name}', name);
   String get myProductsLogoutQuestion => _t('my_products_logout_question');
   String get myProductsClearCacheText => _t('my_products_clear_cache_text');
   String get myProductsLogoutText => _t('my_products_logout_text');
   String get myProductsLoading => _t('my_products_loading');
   String get myProductsNoImage => _t('my_products_no_image');
-  String myProductsCreatedOn(String date) => _t('my_products_created_on').replaceAll('{date}', date);
+  String myProductsCreatedOn(String date) =>
+      _t('my_products_created_on').replaceAll('{date}', date);
   String get myProductsListRefreshed => _t('my_products_list_refreshed');
   String get myProductsEdit => _t('my_products_edit');
   String get myProductsDeleteText => _t('my_products_delete_text');
-  String myProductsDeletedSuccess(String name) => _t('my_products_deleted_success').replaceAll('{name}', name);
+  String myProductsDeletedSuccess(String name) =>
+      _t('my_products_deleted_success').replaceAll('{name}', name);
   String get myProductsErrorPrefix => _t('my_products_error_prefix');
   String get myProductsDefaultUser => _t('my_products_default_user');
-  String myProductsCount(int count) => _t('my_products_count').replaceAll('{count}', count.toString());
+  String myProductsCount(int count) =>
+      _t('my_products_count').replaceAll('{count}', count.toString());
   String get myProductsNoName => _t('my_products_no_name');
 
   // Profile
@@ -816,13 +1049,22 @@ class AppLocalizations {
   String get profileChangeName => _t('profile_change_name');
   String get profileSave => _t('profile_save');
   String get profileNameUpdated => _t('profile_name_updated');
-  String profileNameUpdateError(String error) => _t('profile_name_update_error').replaceAll('{error}', error);
+  String profileNameUpdateError(String error) =>
+      _t('profile_name_update_error').replaceAll('{error}', error);
   String get profileSupportTitle => _t('profile_support_title');
   String get profileSupportContent => _t('profile_support_content');
   String get profileSendEmail => _t('profile_send_email');
   String get profileMakeCall => _t('profile_make_call');
   String get profileSendWhatsapp => _t('profile_send_whatsapp');
   String get profileSettings => _t('profile_settings');
+  String get loadingText => _t('loading_text');
+  String get defaultUser => _t('default_user');
+  String get errorText => _t('error_text');
+  String get emailAppError => _t('email_app_error');
+  String get supportEmailSubject => _t('support_email_subject');
+  String get callError => _t('call_error');
+  String get whatsappMessageProfile => _t('whatsapp_message_profile');
+  String get whatsappError => _t('whatsapp_error');
 
   // Add product
   String get addProductTitle => _t('add_title');
@@ -838,15 +1080,20 @@ class AppLocalizations {
   String get addChangeImage => _t('add_change_image');
   String get addPublishing => _t('add_publishing');
   String get addCreateButton => _t('add_create_button');
-  String addCategoryLoadFailed(String code) => _t('add_category_load_failed').replaceAll('{code}', code);
+  String addCategoryLoadFailed(String code) =>
+      _t('add_category_load_failed').replaceAll('{code}', code);
   String get addCategoryError => _t('add_category_error');
-  String addImageUploadError(String message) => _t('add_image_upload_error').replaceAll('{message}', message);
+  String addImageUploadError(String message) =>
+      _t('add_image_upload_error').replaceAll('{message}', message);
   String get addCategoryRequiredWarning => _t('add_category_required_warning');
   String get addImageUploadFailed => _t('add_image_upload_failed');
   String get addProductCreatedWithImage => _t('add_product_created_with_image');
-  String get addProductCreatedWithoutImage => _t('add_product_created_without_image');
-  String addProductCreationError(String message) => _t('add_product_creation_error').replaceAll('{message}', message);
-  String addPublicationError(String error) => _t('add_publication_error').replaceAll('{error}', error);
+  String get addProductCreatedWithoutImage =>
+      _t('add_product_created_without_image');
+  String addProductCreationError(String message) =>
+      _t('add_product_creation_error').replaceAll('{message}', message);
+  String addPublicationError(String error) =>
+      _t('add_publication_error').replaceAll('{error}', error);
 
   // Products by category
   String get categoryNoProducts => _t('category_no_products');
@@ -861,7 +1108,8 @@ class AppLocalizations {
   String get editSaveChanges => _t('edit_save_changes');
   String get editProductUpdated => _t('edit_product_updated');
   String get editUpdateFailed => _t('edit_update_failed');
-  String editError(String error) => _t('edit_error').replaceAll('{error}', error);
+  String editError(String error) =>
+      _t('edit_error').replaceAll('{error}', error);
 
   // Admin - Login livreur
   String get adminLoginError => _t('admin_login_error');
@@ -873,21 +1121,38 @@ class AppLocalizations {
   // Admin - Orders
   String get adminOrdersTitle => _t('admin_orders_title');
   String get adminFilterStatus => _t('admin_filter_status');
-  String adminConnectionError(String error) => _t('admin_connection_error').replaceAll('{error}', error);
-  String adminLoadFailed(String code) => _t('admin_load_failed').replaceAll('{code}', code);
-  String adminStatusUpdated(String status) => _t('admin_status_updated').replaceAll('{status}', status);
-  String adminUpdateFailed(String message) => _t('admin_update_failed').replaceAll('{message}', message);
-  String adminNetworkError(String error) => _t('admin_network_error').replaceAll('{error}', error);
-  String adminCouldNotOpenMap(String lat, String lon) => _t('admin_could_not_open_map').replaceAll('{lat}', lat).replaceAll('{lon}', lon);
+  String adminConnectionError(String error) =>
+      _t('admin_connection_error').replaceAll('{error}', error);
+  String adminLoadFailed(String code) =>
+      _t('admin_load_failed').replaceAll('{code}', code);
+  String adminStatusUpdated(String status) =>
+      _t('admin_status_updated').replaceAll('{status}', status);
+  String adminUpdateFailed(String message) =>
+      _t('admin_update_failed').replaceAll('{message}', message);
+  String adminNetworkError(String error) =>
+      _t('admin_network_error').replaceAll('{error}', error);
+  String adminCouldNotOpenMap(String lat, String lon) =>
+      _t('admin_could_not_open_map')
+          .replaceAll('{lat}', lat)
+          .replaceAll('{lon}', lon);
   String get adminClientPhoneNotFound => _t('admin_client_phone_not_found');
-  String adminCouldNotOpenWhatsapp(String phone) => _t('admin_could_not_open_whatsapp').replaceAll('{phone}', phone);
-  String adminWhatsappError(String error) => _t('admin_whatsapp_error').replaceAll('{error}', error);
-  String adminWhatsappMessage(String id, String status) => _t('admin_whatsapp_message').replaceAll('{id}', id).replaceAll('{status}', status);
+  String adminCouldNotOpenWhatsapp(String phone) =>
+      _t('admin_could_not_open_whatsapp').replaceAll('{phone}', phone);
+  String adminWhatsappError(String error) =>
+      _t('admin_whatsapp_error').replaceAll('{error}', error);
+  String adminWhatsappMessage(String id, String status) =>
+      _t('admin_whatsapp_message')
+          .replaceAll('{id}', id)
+          .replaceAll('{status}', status);
   String get adminChat => _t('admin_chat');
-  String adminClient(String name) => _t('admin_client').replaceAll('{name}', name);
-  String adminTotal(String total) => _t('admin_total').replaceAll('{total}', total);
-  String adminProducts(String summary) => _t('admin_products').replaceAll('{summary}', summary);
-  String adminCurrentStatus(String status) => _t('admin_current_status').replaceAll('{status}', status);
+  String adminClient(String name) =>
+      _t('admin_client').replaceAll('{name}', name);
+  String adminTotal(String total) =>
+      _t('admin_total').replaceAll('{total}', total);
+  String adminProducts(String summary) =>
+      _t('admin_products').replaceAll('{summary}', summary);
+  String adminCurrentStatus(String status) =>
+      _t('admin_current_status').replaceAll('{status}', status);
   String get adminPaymentMethod => _t('admin_payment_method');
   String adminOrderId(String id) => _t('admin_order_id').replaceAll('{id}', id);
   String get adminStatusAll => _t('admin_status_all');
@@ -901,36 +1166,114 @@ class AppLocalizations {
   String get themeLight => _t('theme_light');
   String get themeDark => _t('theme_dark');
   String get themeSystem => _t('theme_system');
-  String themeChanged(String theme) => _t('theme_changed').replaceAll('{theme}', theme);
+  String themeChanged(String theme) =>
+      _t('theme_changed').replaceAll('{theme}', theme);
 
   // Comments
   String get commentWriteComment => _t('comment_write_comment');
   String get commentSentSuccess => _t('comment_sent_success');
-  String commentConnectionError(String error) => _t('comment_connection_error').replaceAll('{error}', error);
+  String commentConnectionError(String error) =>
+      _t('comment_connection_error').replaceAll('{error}', error);
   String get commentTimeout => _t('comment_timeout');
-  String commentLoadFailed(String code) => _t('comment_load_failed').replaceAll('{code}', code);
+  String commentLoadFailed(String code) =>
+      _t('comment_load_failed').replaceAll('{code}', code);
   String get commentRequestTimeout => _t('comment_request_timeout');
-  String commentCannotLoad(String error) => _t('comment_cannot_load').replaceAll('{error}', error);
-  String commentError(String error) => _t('comment_error').replaceAll('{error}', error);
+  String commentCannotLoad(String error) =>
+      _t('comment_cannot_load').replaceAll('{error}', error);
+  String commentError(String error) =>
+      _t('comment_error').replaceAll('{error}', error);
   String get commentRetry => _t('comment_retry');
   String get commentNoComments => _t('comment_no_comments');
   String get commentAddComment => _t('comment_add_comment');
   String get commentYourReview => _t('comment_your_review');
   String get commentRating => _t('comment_rating');
   String get commentSend => _t('comment_send');
-  String commentPostedOn(String date) => _t('comment_posted_on').replaceAll('{date}', date);
+  String commentPostedOn(String date) =>
+      _t('comment_posted_on').replaceAll('{date}', date);
   String get commentAnonymous => _t('comment_anonymous');
   String get commentUnknownDate => _t('comment_unknown_date');
   String get commentSendFailed => _t('comment_send_failed');
+
+  // Common - Payment & Status
+  String get paymentMethodMpesa => _t('payment_method_mpesa');
+  String get paymentMethodOrange => _t('payment_method_orange');
+  String get paymentMethodAirtel => _t('payment_method_airtel');
+  String get statusPending => _t('status_pending');
+  String get statusUnknown => _t('status_unknown');
+  String get statusCancelled => _t('status_cancelled');
+  String get statusInProgress => _t('status_in_progress');
+  String get statusCompleted => _t('status_completed');
+  String get productUnknown => _t('product_unknown');
+  String get unspecified => _t('unspecified');
+
+  // Common - Errors
+  String get errorUnknown => _t('error_unknown');
+  String errorConnectionGeneric(String error) =>
+      _t('error_connection_generic').replaceAll('{error}', error);
+  String genericErrorPrefix(String error) =>
+      _t('generic_error_prefix').replaceAll('{error}', error);
+
+  // Edit Product - Additional
+  String editApiError(String message) =>
+      _t('edit_api_error').replaceAll('{message}', message);
+  String get editDefaultTitle => _t('edit_default_title');
+
+  // Delete Account
+  String get deleteAccountTitle => _t('delete_account_title');
+  String get deleteAccountNoUser => _t('delete_account_no_user');
+  String get deleteAccountTypeConfirm => _t('delete_account_type_confirm');
+  String get deleteAccountKeyword => _t('delete_account_keyword');
+  String get deleteAccountLastConfirmTitle =>
+      _t('delete_account_last_confirm_title');
+  String get deleteAccountLastConfirmContent =>
+      _t('delete_account_last_confirm_content');
+  String get deleteAccountCancel => _t('delete_account_cancel');
+  String get deleteAccountOk => _t('delete_account_ok');
+  String get deleteAccountSuccessTitle => _t('delete_account_success_title');
+  String get deleteAccountSuccessContent =>
+      _t('delete_account_success_content');
+  String get deleteAccountRequiresLogin => _t('delete_account_requires_login');
+  String get deleteAccountVerificationTitle =>
+      _t('delete_account_verification_title');
+  String get deleteAccountVerificationContent =>
+      _t('delete_account_verification_content');
+  String get deleteAccountGenericError => _t('delete_account_generic_error');
+  String get deleteAccountButtonConfirm => _t('delete_account_button_confirm');
+  String get deleteAccountWarningTitle => _t('delete_account_warning_title');
+  String get deleteAccountWarningIntro => _t('delete_account_warning_intro');
+  String get deleteAccountWarningListIntro =>
+      _t('delete_account_warning_list_intro');
+  String get deleteAccountWarningAccount =>
+      _t('delete_account_warning_account');
+  String get deleteAccountWarningProducts =>
+      _t('delete_account_warning_products');
+  String get deleteAccountWarningOrders => _t('delete_account_warning_orders');
+  String get deleteAccountWarningComments =>
+      _t('delete_account_warning_comments');
+  String get deleteAccountWarningPersonalData =>
+      _t('delete_account_warning_personal_data');
+  String get deleteAccountWarningHistory =>
+      _t('delete_account_warning_history');
+  String get deleteAccountAccountToDelete =>
+      _t('delete_account_account_to_delete');
+  String get deleteAccountWarningsLabel => _t('delete_account_warnings_label');
+  String get deleteAccountInputLabel => _t('delete_account_input_label');
+  String get deleteAccountInputHint => _t('delete_account_input_hint');
+  String get deleteAccountButtonProgress =>
+      _t('delete_account_button_progress');
+  String get deleteAccountButton => _t('delete_account_button');
+
+  // Profile - Errors
+  String get errorOpenEmail => _t('error_open_email');
+  String get errorMakeCall => _t('error_make_call');
+  String get errorOpenWhatsapp => _t('error_open_whatsapp');
 }
 
-class AppLocalizationsDelegate
-    extends LocalizationsDelegate<AppLocalizations> {
+class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
   const AppLocalizationsDelegate();
 
   @override
-  bool isSupported(Locale locale) =>
-      ['fr', 'en'].contains(locale.languageCode);
+  bool isSupported(Locale locale) => ['fr', 'en'].contains(locale.languageCode);
 
   @override
   Future<AppLocalizations> load(Locale locale) async {
@@ -941,5 +1284,3 @@ class AppLocalizationsDelegate
   bool shouldReload(covariant LocalizationsDelegate<AppLocalizations> old) =>
       false;
 }
-
-

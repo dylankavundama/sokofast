@@ -1,19 +1,11 @@
 import 'dart:convert';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:soko/services.dart'; // Assurez-vous que ce fichier contient `baseUrl`
-<<<<<<< Updated upstream
-import 'package:url_launcher/url_launcher.dart';
-import 'package:soko/utils/responsive.dart';
-import 'package:soko/Auth/loginPage.dart';
-import 'package:soko/style.dart';
-=======
 import 'package:soko/l10n/app_localizations.dart';
->>>>>>> Stashed changes
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -45,15 +37,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     final loc = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.displayName == null) {
-      // 💡 MODIFIÉ : Ne plus bloquer, permettre l'accès en mode invité
+      // Si l'utilisateur n'est pas connecté ou n'a pas de nom d'affichage
       setState(() {
         _isLoading = false;
-<<<<<<< Updated upstream
-        _errorMessage = null; // Pas d'erreur, juste mode invité
-        orders = []; // Liste vide pour les invités
-=======
         _errorMessage = loc.ordersMustLogin;
->>>>>>> Stashed changes
       });
       return;
     }
@@ -121,16 +108,33 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
     }
   }
 
+  /// Traduit le statut pour l'affichage
+  String _getLocalizedStatus(BuildContext context, String status) {
+    final loc = AppLocalizations.of(context);
+    switch (status.toLowerCase()) {
+      case 'en cours':
+      case 'pending':
+      case 'in progress':
+        return loc.statusInProgress;
+      case 'terminé':
+      case 'completed':
+        return loc.statusCompleted;
+      case 'annulé':
+      case 'cancelled':
+        return loc.statusCancelled;
+      default:
+        return status;
+    }
+  }
+
   /// Fonction utilitaire pour obtenir la couleur du statut.
   Color getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'annulé':
-      case 'annuler':
         return Colors.red;
       case 'en cours':
         return Colors.orange;
       case 'terminé':
-      case 'terminer':
         return Colors.green;
       default:
         return Colors.red;
@@ -158,68 +162,20 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : (loggedInUserName == null)
+          : _errorMessage != null
               ? Center(
-                  // 💡 NOUVEAU : Interface invité avec bouton de connexion
-                  child: Responsive.centerContent(
-                    context,
-                    Padding(
-                      padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 1.875),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_bag_outlined,
-                            size: Responsive.isMobile(context) ? 80.0 : 100.0,
-                            color: Colors.grey[400],
-                          ),
-                          SizedBox(height: Responsive.getVerticalPadding(context) * 3),
-                          Text(
-                            'Mode Invité',
-                            style: TextStyle(
-                              fontSize: Responsive.getAdaptiveFontSize(context, mobile: 24, tablet: 28, desktop: 32),
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                          SizedBox(height: Responsive.getVerticalPadding(context) * 1.5),
-                        Text(
-                          'Connectez-vous pour voir l\'historique de vos commandes',
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 50, color: Colors.red),
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(fontSize: 16, color: Colors.red),
                           textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.grey[600],
-                          ),
                         ),
-<<<<<<< Updated upstream
-                        const SizedBox(height: 40),
-                        ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => LoginPage()),
-                            );
-                          },
-                          icon: const Icon(Icons.login, color: Colors.white),
-                          label: const Text(
-                            'Se connecter',
-                            style: TextStyle(color: Colors.white, fontSize: 18),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: backdColor,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 32,
-                              vertical: 16,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-=======
                       ),
                       const SizedBox(height: 20),
                       ElevatedButton(
@@ -227,33 +183,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         child: Text(loc.ordersRetry),
                       ),
                     ],
->>>>>>> Stashed changes
                   ),
                 )
-              : _errorMessage != null
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline, size: 50, color: Colors.red),
-                          const SizedBox(height: 20),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            child: Text(
-                              _errorMessage!,
-                              style: const TextStyle(fontSize: 16, color: Colors.red),
-                              textAlign: TextAlign.center,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-                          ElevatedButton(
-                            onPressed: _initializeAndFetchOrders,
-                            child: const Text('Réessayer'),
-                          ),
-                        ],
-                      ),
-                    )
-                  : orders.isEmpty
+              : orders.isEmpty
                   ? Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -274,11 +206,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                     )
                   : RefreshIndicator(
                       onRefresh: _fetchOrdersFromApi,
-                      child: Responsive.centerContent(
-                        context,
-                        ListView.builder(
-                          padding: EdgeInsets.all(Responsive.getHorizontalPadding(context) * 0.625),
-                          itemCount: orders.length,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(10),
+                        itemCount: orders.length,
                         itemBuilder: (context, index) {
                           final order = orders[index];
                           final date = DateTime.parse(order['order_date']);
@@ -289,7 +219,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           final percentageIncrease = 0.30;
                           final displayedOrderTotal = totalPriceFromBackend * (1 + percentageIncrease);
                           // -----------------------------------------------------
-                          final status = order['status']?.toString() ?? 'Inconnu';
+                          final status = order['status']?.toString() ?? loc.statusUnknown;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 15),
@@ -324,19 +254,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _buildInfoRow(loc.ordersStatus, status, getStatusColor(status)),
-                                      _buildInfoRow(loc.ordersPaymentMethod, order['payment_method']),
+                                      _buildInfoRow(loc, loc.ordersStatus, _getLocalizedStatus(context, status), getStatusColor(status)),
+                                      _buildInfoRow(loc, loc.ordersPaymentMethod, order['payment_method']),
                                       if (order['address'] != null)
-<<<<<<< Updated upstream
-                                        _buildInfoRow('Adresse', order['address']),
-                                      
-                                      // 💡 NOUVEAU : Informations du livreur
-                                      if (order['livreur_id'] != null && order['livreur_nom'] != null)
-                                        _buildLivreurSection(order),
-                                      
-=======
-                                        _buildInfoRow(loc.ordersAddress, order['address']),
->>>>>>> Stashed changes
+                                        _buildInfoRow(loc, loc.ordersAddress, order['address']),
                                       const SizedBox(height: 15),
                                       const Divider(),
                                       Text(
@@ -346,8 +267,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                       const SizedBox(height: 10),
                                       ...(order['productList'] as List)
                                           .map((product) {
-                                            final productName = product['product_name'] ?? 'Produit inconnu';
+                                            final productName = product['product_name'] ?? loc.productUnknown;
                                             final quantity = product['quantity'] ?? 0;
+                                            final totalForProductLine = (product['total_price'] as num?)?.toDouble() ?? 0.0;
+                                            
+                                            // L'augmentation de 30% ne s'applique QU'AU total de la commande
+                                            // On garde ici le prix unitaire et le total de la ligne sans l'augmentation pour les détails.
+                                            final unitPrice = quantity > 0 ? totalForProductLine / quantity : 0.0;
 
                                             return Padding(
                                               padding: const EdgeInsets.symmetric(vertical: 5),
@@ -406,13 +332,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           );
                         },
                       ),
-                      ),
                     ),
     );
   }
 
   /// Widget utilitaire pour afficher les lignes d'information.
-  Widget _buildInfoRow(String label, String? value, [Color? valueColor]) {
+  Widget _buildInfoRow(AppLocalizations loc, String label, String? value, [Color? valueColor]) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -427,337 +352,12 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           ),
           Expanded(
             child: Text(
-              value ?? 'Non spécifié',
+              value ?? loc.unspecified,
               style: TextStyle(fontSize: 14, color: valueColor),
             ),
           ),
         ],
       ),
     );
-  }
-
-  // 💡 NOUVEAU : Section livreur avec contact et notation
-  Widget _buildLivreurSection(Map<String, dynamic> order) {
-    final livreurNom = order['livreur_nom'] ?? '';
-    final livreurPrenom = order['livreur_prenom'] ?? '';
-    final livreurTelephone = order['livreur_telephone'] ?? '';
-    final livreurNoteMoyenne = order['livreur_note_moyenne'];
-    final livreurId = order['livreur_id'];
-    final transactionId = order['transaction_id'];
-    final clientName = order['name'] ?? loggedInUserName ?? '';
-    final status = order['status']?.toString() ?? '';
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 10),
-        const Divider(),
-        const Text(
-          'Livreur',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          children: [
-            const Icon(Icons.motorcycle, size: 20, color: Colors.orange),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$livreurPrenom $livreurNom',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (livreurNoteMoyenne != null)
-                    Row(
-                      children: [
-                        ...List.generate(5, (index) {
-                          final noteValue = (livreurNoteMoyenne is num) 
-                              ? livreurNoteMoyenne.toDouble() 
-                              : double.tryParse(livreurNoteMoyenne.toString()) ?? 0.0;
-                          return Icon(
-                            index < noteValue.round()
-                                ? Icons.star
-                                : Icons.star_border,
-                            size: 14,
-                            color: Colors.amber,
-                          );
-                        }),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(${livreurNoteMoyenne.toString()})',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        // 💡 NOUVEAU : TextButton pour contacter le livreur
-        if (livreurTelephone != null && livreurTelephone.toString().isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: TextButton.icon(
-              onPressed: () => _launchWhatsAppLivreur(livreurTelephone.toString(), transactionId),
-              icon: const Icon(Icons.chat, size: 18, color: Colors.green),
-              label: const Text(
-                'Contacter le livreur',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: Colors.green, width: 1),
-                ),
-              ),
-            ),
-          ),
-        const SizedBox(height: 8),
-        // 💡 NOUVEAU : Bouton pour noter le livreur (seulement si commande terminée)
-        if (status.toLowerCase() == 'terminé' || status.toLowerCase() == 'terminer')
-          FutureBuilder<Map<String, dynamic>>(
-            future: _checkExistingNote(transactionId, clientName),
-            builder: (context, snapshot) {
-              final hasNote = snapshot.data?['has_note'] ?? false;
-              final existingNote = snapshot.data?['note'];
-              
-              return ElevatedButton.icon(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: hasNote ? Colors.blue : Colors.orange,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                ),
-                icon: Icon(
-                  hasNote ? Icons.star : Icons.star_border,
-                  color: Colors.white,
-                  size: 18,
-                ),
-                label: Text(
-                  hasNote ? 'Modifier la note' : 'Noter le livreur',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-                onPressed: () => _showRatingDialog(
-                  order,
-                  livreurId,
-                  transactionId,
-                  clientName,
-                  existingNote,
-                ),
-              );
-            },
-          ),
-      ],
-    );
-  }
-
-  // 💡 NOUVEAU : Vérifier si une note existe déjà
-  Future<Map<String, dynamic>> _checkExistingNote(String transactionId, String clientName) async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/get_note_livreur.php?transaction_id=$transactionId&client_name=${Uri.encodeComponent(clientName)}'),
-      );
-      
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return {
-          'has_note': data['has_note'] ?? false,
-          'note': data['note'],
-        };
-      }
-    } catch (e) {
-      print('Erreur lors de la vérification de la note: $e');
-    }
-    return {'has_note': false, 'note': null};
-  }
-
-  // 💡 NOUVEAU : Lancer WhatsApp pour contacter le livreur
-  Future<void> _launchWhatsAppLivreur(String telephone, String transactionId) async {
-    final message = 'Bonjour, je vous contacte au sujet de ma commande n° $transactionId.';
-    final url = Uri.parse(
-      'https://api.whatsapp.com/send?phone=$telephone&text=${Uri.encodeComponent(message)}',
-    );
-
-    try {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text("Impossible d'ouvrir WhatsApp pour le numéro $telephone."),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors du lancement de WhatsApp: $e')),
-        );
-      }
-    }
-  }
-
-  // 💡 NOUVEAU : Dialog pour noter le livreur
-  void _showRatingDialog(
-    Map<String, dynamic> order,
-    dynamic livreurId,
-    String transactionId,
-    String clientName,
-    Map<String, dynamic>? existingNote,
-  ) {
-    int selectedRating = existingNote?['note'] != null 
-        ? (existingNote!['note'] is int 
-            ? existingNote['note'] 
-            : int.tryParse(existingNote['note'].toString()) ?? 5)
-        : 5;
-    final TextEditingController commentController = TextEditingController(
-      text: existingNote?['commentaire']?.toString() ?? '',
-    );
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Noter le livreur'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '${order['livreur_prenom']} ${order['livreur_nom']}',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                const Text('Note:'),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(5, (index) {
-                    return IconButton(
-                      icon: Icon(
-                        index < selectedRating ? Icons.star : Icons.star_border,
-                        color: Colors.amber,
-                        size: 40,
-                      ),
-                      onPressed: () {
-                        setDialogState(() {
-                          selectedRating = index + 1;
-                        });
-                      },
-                    );
-                  }),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: commentController,
-                  decoration: const InputDecoration(
-                    labelText: 'Commentaire (optionnel)',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                await _submitRating(
-                  livreurId is int ? livreurId : int.tryParse(livreurId.toString()) ?? 0,
-                  transactionId,
-                  clientName,
-                  selectedRating,
-                  commentController.text,
-                );
-                if (mounted) {
-                  Navigator.pop(context);
-                  _fetchOrdersFromApi(); // Rafraîchir pour afficher la note
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-              ),
-              child: const Text('Enregistrer', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // 💡 NOUVEAU : Soumettre la note
-  Future<void> _submitRating(
-    int livreurId,
-    String transactionId,
-    String clientName,
-    int note,
-    String commentaire,
-  ) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/noter_livreur.php'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'livreur_id': livreurId,
-          'transaction_id': transactionId,
-          'client_name': clientName,
-          'note': note,
-          'commentaire': commentaire,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Note enregistrée avec succès !'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(data['message'] ?? 'Erreur lors de l\'enregistrement'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      } else {
-        throw Exception('Erreur HTTP: ${response.statusCode}');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }

@@ -378,4 +378,4 @@ Pour toute question ou problème, veuillez ouvrir une issue sur le repository ou
 ---
 
 **Version actuelle** : 2.2.0+27  
-**Dernière mise à jour** : 2024
+**Dernière mise à jour** : 2026

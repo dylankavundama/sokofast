@@ -1,12 +1,13 @@
 import 'dart:async';
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:soko/services.dart';
-import 'package:soko/Auth/LoginPage.dart';
 import 'package:html_unescape/html_unescape.dart';
+import 'package:http/http.dart' as http;
+import 'package:soko/l10n/app_localizations.dart';
+import 'package:soko/services.dart';
 class CommentSection extends StatefulWidget {
   final int productId;
 
@@ -17,7 +18,7 @@ class CommentSection extends StatefulWidget {
 }
 
 class _CommentSectionState extends State<CommentSection> {
-  late Future<List<Comment>> futureComments;
+  Future<List<Comment>>? futureComments;
   final TextEditingController commentController = TextEditingController();
   int rating = 5;
   bool isSubmitting = false;
@@ -30,7 +31,7 @@ class _CommentSectionState extends State<CommentSection> {
   void initState() {
     super.initState();
     _loadLoggedInUser();
-    futureComments = fetchComments(widget.productId);
+    // futureComments sera initialisé dans build() où on a accès à AppLocalizations
     // No need to clear or refresh here, as it's for initial load
   }
 
@@ -68,9 +69,10 @@ class _CommentSectionState extends State<CommentSection> {
 
   Future<void> postComment(
       int productId, String userName, String comment, int rating) async {
+    final loc = AppLocalizations.of(context);
     if (comment.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Veuillez écrire votre commentaire')),
+        SnackBar(content: Text(loc.commentWriteComment)),
       );
       return;
     }
@@ -96,33 +98,33 @@ class _CommentSectionState extends State<CommentSection> {
       if (response.statusCode == 200 && responseData['status'] == 'success') {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Commentaire envoyé avec succès!')),
+            SnackBar(content: Text(loc.commentSentSuccess)),
           );
         }
         await _refreshComments(); // This refreshes the comment list
         _clearCommentField(); // This clears the input field
       } else {
         throw Exception(
-            responseData['message'] ?? 'Échec de l\'envoi du commentaire');
+            responseData['message'] ?? loc.commentSendFailed);
       }
     } on http.ClientException catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur de connexion: ${e.message}')),
+          SnackBar(content: Text(loc.commentConnectionError(e.message))),
         );
       }
     } on TimeoutException {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Temps d\'attente dépassé')),
+          SnackBar(content: Text(loc.commentTimeout)),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
               content: Text(
-            '\nCommentaire envoyé avec succès!',
+            loc.commentSentSuccess,
             textAlign: TextAlign.center,
           )),
         );
@@ -134,7 +136,7 @@ class _CommentSectionState extends State<CommentSection> {
     _clearCommentField();
   }
 
-  Future<List<Comment>> fetchComments(int productId) async {
+  Future<List<Comment>> fetchComments(int productId, AppLocalizations loc) async {
     try {
       final response = await http
           .get(
@@ -144,27 +146,31 @@ class _CommentSectionState extends State<CommentSection> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        return data.map((json) => Comment.fromJson(json)).toList();
+        return data.map((json) => Comment.fromJson(json, loc)).toList();
       } else {
         throw Exception(
-            'Échec du chargement des commentaires: ${response.statusCode}');
+            loc.commentLoadFailed(response.statusCode.toString()));
       }
     } on TimeoutException {
-      throw Exception('La requête a pris trop de temps');
+      throw Exception(loc.commentRequestTimeout);
     } catch (e) {
       throw Exception(
-          'Impossible de charger les commentaires: ${e.toString()}');
+          loc.commentCannotLoad(e.toString()));
     }
   }
 
   Future<void> _refreshComments() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
-      futureComments = fetchComments(widget.productId);
+      futureComments = fetchComments(widget.productId, loc);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+    // Initialiser futureComments si ce n'est pas déjà fait
+    futureComments ??= fetchComments(widget.productId, loc);
     return Scaffold(
       // appBar: AppBar(title: const Text('Commentaires')),
       body: RefreshIndicator(
@@ -184,18 +190,18 @@ class _CommentSectionState extends State<CommentSection> {
                   if (snapshot.hasError) {
                     return Column(
                       children: [
-                        Text('Erreur: ${snapshot.error}'),
+                        Text(loc.commentError(snapshot.error.toString())),
                         const SizedBox(height: 10),
                         ElevatedButton(
                           onPressed: _refreshComments,
-                          child: const Text('Réessayer'),
+                          child: Text(loc.commentRetry),
                         ),
                       ],
                     );
                   }
                   if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Text('Aucun commentaire pour ce produit'),
+                    return Center(
+                      child: Text(loc.commentNoComments),
                     );
                   }
 
@@ -215,7 +221,7 @@ class _CommentSectionState extends State<CommentSection> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Ajouter un commentaire',
+                      loc.commentAddComment,
                       // en tant que ${loggedInUserName!}',
                       style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 18),
@@ -224,7 +230,7 @@ class _CommentSectionState extends State<CommentSection> {
                     TextField(
                       controller: commentController,
                       decoration: InputDecoration(
-                        labelText: "Votre avis",
+                        labelText: loc.commentYourReview,
                         border: const OutlineInputBorder(),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 14),
@@ -233,18 +239,18 @@ class _CommentSectionState extends State<CommentSection> {
                           icon: const Icon(Icons.clear),
                           onPressed: _clearCommentField,
                         ),
-                        // ------------------------------
+                        // ------------------------------ 
                       ),
                       maxLines: 3,
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<int>(
                       value: rating,
-                      decoration: const InputDecoration(
-                        labelText: "Note",
-                        border: OutlineInputBorder(),
+                      decoration: InputDecoration(
+                        labelText: loc.commentRating,
+                        border: const OutlineInputBorder(),
                         contentPadding:
-                            EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                            const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                       ),
                       items: List.generate(5, (i) => i + 1).map((r) {
                         return DropdownMenuItem(
@@ -279,7 +285,7 @@ class _CommentSectionState extends State<CommentSection> {
                             },
                       child: isSubmitting
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text("Envoyer"),
+                          : Text(loc.commentSend),
                     ),
                   ],
                 )
@@ -339,7 +345,7 @@ class CommentCard extends StatelessWidget {
                 fontSize: 14),),
             const SizedBox(height: 18),
             Text(
-              'Posté le ${comment.createdAt}',
+              AppLocalizations.of(context).commentPostedOn(comment.createdAt),
               style: GoogleFonts.roboto(
             //    fontSize: 12,
                 color: Colors.grey,
@@ -366,12 +372,12 @@ class Comment {
     required this.createdAt,
   });
 
-  factory Comment.fromJson(Map<String, dynamic> json) {
+  factory Comment.fromJson(Map<String, dynamic> json, AppLocalizations loc) {
     return Comment(
-      userName: json['user_name'] ?? 'Anonyme',
+      userName: json['user_name'] ?? loc.commentAnonymous,
       comment: json['comment'] ?? '',
       rating: json['rating'] ?? 0,
-      createdAt: json['created_at'] ?? 'Date inconnue',
+      createdAt: json['created_at'] ?? loc.commentUnknownDate,
     );
   }
 }

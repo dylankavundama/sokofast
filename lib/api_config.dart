@@ -7,7 +7,7 @@ class ApiConfig {
   static const String BEARER_TOKEN =
       'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJcL2xvZ2luIiwicm9sZXMiOlsiTUVSQ0hBTlQiXSwiZXhwIjoxODIyODE0NjM1LCJzdWIiOiI0NjEwYmVkZjg5YTdhNjQ5MjdlMDFkYzg4Yjk2MGZlOCJ9.siqrnMclrfpi6XbdIvTulvyLp8PoSrQhw5JPCbRuflE';
   // Base URL de votre backend (utilisée pour le callback)
-  static const String BASE_URL = 'https://babutik.com/soko';
+  static const String BASE_URL = 'https://sokofast.com/backend';
 }
 
 

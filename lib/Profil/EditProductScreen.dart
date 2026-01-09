@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:soko/l10n/app_localizations.dart';
 // Importez vos autres dépendances (constantes, ProductCategory, etc.)
 
 // ⚠️ NOUVEL ÉCRAN DE MODIFICATION
@@ -101,23 +102,25 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
       // Pour cet exemple, nous allons simuler l'appel à _updateProduct().
       final success = await _updateProduct(productId, updateData);
       
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("✅ Produit mis à jour!"), backgroundColor: Colors.green),
+            SnackBar(content: Text(loc.editProductUpdated), backgroundColor: Colors.green),
           );
           // Retourner à l'écran précédent (Mes Produits)
           Navigator.of(context).pop(true); 
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("❌ Échec de la mise à jour."), backgroundColor: Colors.red),
+            SnackBar(content: Text(loc.editUpdateFailed), backgroundColor: Colors.red),
           );
         }
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Erreur: $e"), backgroundColor: Colors.red),
+          SnackBar(content: Text(loc.editError(e.toString())), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -127,8 +130,9 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text("Modifier : ${widget.product['name'] ?? 'Produit'}"),),
+      appBar: AppBar(title: Text(loc.editTitle(widget.product['name'] ?? loc.editDefaultTitle))),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -138,24 +142,24 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
               // ➡️ Champ Nom
               TextFormField(
                 controller: _nameController,
-                decoration: const InputDecoration(labelText: "Nom du produit"),
-                validator: (v) => v?.isEmpty ?? true ? "Nom requis" : null,
+                decoration: InputDecoration(labelText: loc.editProductName),
+                validator: (v) => v?.isEmpty ?? true ? loc.editNameRequired : null,
               ),
               const SizedBox(height: 16),
               
               // ➡️ Champ Prix
               TextFormField(
                 controller: _priceController,
-                decoration: const InputDecoration(labelText: "Prix"),
+                decoration: InputDecoration(labelText: loc.editPrice),
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                validator: (v) => v?.isEmpty ?? true ? "Prix requis" : null,
+                validator: (v) => v?.isEmpty ?? true ? loc.editPriceRequired : null,
               ),
               const SizedBox(height: 16),
               
               // ➡️ Champ Description
               TextFormField(
                 controller: _descriptionController,
-                decoration: const InputDecoration(labelText: "Description"),
+                decoration: InputDecoration(labelText: loc.editDescription),
                 maxLines: 3,
               ),
               const SizedBox(height: 30),
@@ -169,9 +173,9 @@ Future<bool> _updateProduct(int productId, Map<String, dynamic> productData) asy
                 ),
                 child: _isUpdating
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        "Sauvegarder les modifications",
-                        style: TextStyle(color: Colors.white, fontSize: 16),
+                    : Text(
+                        loc.editSaveChanges,
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
                       ),
               ),
             ],

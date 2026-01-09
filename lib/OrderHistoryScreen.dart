@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:soko/services.dart'; // Assurez-vous que ce fichier contient `baseUrl`
+import 'package:soko/l10n/app_localizations.dart';
 
 class OrderHistoryScreen extends StatefulWidget {
   const OrderHistoryScreen({super.key});
@@ -33,12 +34,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
       _errorMessage = null;
     });
 
+    final loc = AppLocalizations.of(context);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || user.displayName == null) {
       // Si l'utilisateur n'est pas connecté ou n'a pas de nom d'affichage
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Vous devez être connecté pour voir vos commandes.';
+        _errorMessage = loc.ordersMustLogin;
       });
       return;
     }
@@ -80,26 +82,48 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
             orders.sort((a, b) => b['order_date'].compareTo(a['order_date']));
           });
         } else {
+          final loc = AppLocalizations.of(context);
           setState(() {
-            _errorMessage = json['message'] ?? 'Aucune commande trouvée.';
+            _errorMessage = json['message'] ?? loc.ordersNotFoundMessage;
             orders = []; // S'assurer que la liste est vide en cas d'erreur
           });
         }
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
-          _errorMessage = 'Erreur de serveur (${response.statusCode})';
+          _errorMessage = loc.ordersServerError(response.statusCode.toString());
           orders = [];
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
-        _errorMessage = 'Erreur de connexion: ${e.toString()}';
+        _errorMessage = loc.ordersConnectionError(e.toString());
         orders = [];
       });
     } finally {
       setState(() {
         _isLoading = false;
       });
+    }
+  }
+
+  /// Traduit le statut pour l'affichage
+  String _getLocalizedStatus(BuildContext context, String status) {
+    final loc = AppLocalizations.of(context);
+    switch (status.toLowerCase()) {
+      case 'en cours':
+      case 'pending':
+      case 'in progress':
+        return loc.statusInProgress;
+      case 'terminé':
+      case 'completed':
+        return loc.statusCompleted;
+      case 'annulé':
+      case 'cancelled':
+        return loc.statusCancelled;
+      default:
+        return status;
     }
   }
 
@@ -119,9 +143,10 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mes Commandes'),
+        title: Text(loc.ordersTitle),
         centerTitle: true,
         actions: [
           IconButton(
@@ -155,7 +180,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: _initializeAndFetchOrders,
-                        child: const Text('Réessayer'),
+                        child: Text(loc.ordersRetry),
                       ),
                     ],
                   ),
@@ -167,13 +192,13 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                         children: [
                           const Icon(Icons.shopping_bag_outlined, size: 50, color: Colors.grey),
                           const SizedBox(height: 20),
-                          const Text(
-                            'Aucune commande trouvée',
-                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          Text(
+                            loc.ordersNotFound,
+                            style: const TextStyle(fontSize: 18, color: Colors.grey),
                           ),
                           const SizedBox(height: 10),
                           Text(
-                            'Connecté en tant que: ${loggedInUserName ?? ''}',
+                            '${loc.ordersConnectedAs} ${loggedInUserName ?? ''}',
                             style: const TextStyle(fontSize: 14, color: Colors.grey),
                           ),
                         ],
@@ -194,7 +219,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                           final percentageIncrease = 0.30;
                           final displayedOrderTotal = totalPriceFromBackend * (1 + percentageIncrease);
                           // -----------------------------------------------------
-                          final status = order['status']?.toString() ?? 'Inconnu';
+                          final status = order['status']?.toString() ?? loc.statusUnknown;
 
                           return Card(
                             margin: const EdgeInsets.only(bottom: 15),
@@ -210,7 +235,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                 ),
                               ),
                               title: Text(
-                                'Commande #${order['id']}',
+                                loc.ordersOrderNumber(order['id'].toString()),
                                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                               subtitle: Column(
@@ -229,20 +254,20 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      _buildInfoRow('Status', status, getStatusColor(status)),
-                                      _buildInfoRow('Méthode de paiement', order['payment_method']),
+                                      _buildInfoRow(loc, loc.ordersStatus, _getLocalizedStatus(context, status), getStatusColor(status)),
+                                      _buildInfoRow(loc, loc.ordersPaymentMethod, order['payment_method']),
                                       if (order['address'] != null)
-                                        _buildInfoRow('Adresse', order['address']),
+                                        _buildInfoRow(loc, loc.ordersAddress, order['address']),
                                       const SizedBox(height: 15),
                                       const Divider(),
-                                      const Text(
-                                        'Détails des produits:',
-                                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      Text(
+                                        loc.ordersProductsDetails,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                       ),
                                       const SizedBox(height: 10),
                                       ...(order['productList'] as List)
                                           .map((product) {
-                                            final productName = product['product_name'] ?? 'Produit inconnu';
+                                            final productName = product['product_name'] ?? loc.productUnknown;
                                             final quantity = product['quantity'] ?? 0;
                                             final totalForProductLine = (product['total_price'] as num?)?.toDouble() ?? 0.0;
                                             
@@ -289,10 +314,9 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          const Text(
-                                            // 'Total de la commande (30% incl. ):',
-                                                    'Total de la commande',
-                                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                          Text(
+                                            loc.ordersTotal,
+                                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                           ),
                                           Text(
                                             '${displayedOrderTotal.toStringAsFixed(2)} \$',
@@ -313,7 +337,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
   }
 
   /// Widget utilitaire pour afficher les lignes d'information.
-  Widget _buildInfoRow(String label, String? value, [Color? valueColor]) {
+  Widget _buildInfoRow(AppLocalizations loc, String label, String? value, [Color? valueColor]) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 5),
       child: Row(
@@ -328,7 +352,7 @@ class _OrderHistoryScreenState extends State<OrderHistoryScreen> {
           ),
           Expanded(
             child: Text(
-              value ?? 'Non spécifié',
+              value ?? loc.unspecified,
               style: TextStyle(fontSize: 14, color: valueColor),
             ),
           ),

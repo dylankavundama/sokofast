@@ -1,9 +1,11 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // NOUVEL IMPORT SHIMMER
-import 'package:soko/Product/productCard.dart'; 
+import 'package:soko/Product/productCard.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart'; // Contient 'loading' et 'primaryYellow'
 
 class ProductListScreen extends StatefulWidget {
@@ -63,9 +65,9 @@ class _ProductListScreenState extends State<ProductListScreen> {
       _isSearching = true;
     });
   }
-  
+
   // Fonction utilitaire pour traiter les données (en ligne ou en cache) et mettre à jour l'état
-  void _updateProductState(List<dynamic> data) {
+  void _updateProductState(List<dynamic> data, {bool isOffline = false}) {
     Map<String, List<dynamic>> grouped = {};
 
     for (var product in data) {
@@ -92,51 +94,45 @@ class _ProductListScreenState extends State<ProductListScreen> {
     setState(() {
       isLoading = true;
       errorMessage = ''; // Réinitialiser avant la nouvelle tentative
+// _isOfflineMode = false; // variable non définie, supprimée
     });
-    
+
     final prefs = await SharedPreferences.getInstance();
 
     try {
       // Tenter de récupérer les produits depuis l'API (connexion)
       final response = await http.get(
-        Uri.parse(
+          Uri.parse(
               'https://www.babutik.com/wp-json/wc/v3/products?per_page=100'),
           headers: {
             'Authorization':
                 'Basic ${base64Encode(utf8.encode('ck_20c9eaf44a30b5028558551525a1b24201ce8293:cs_d2f987d16ac480a59f04a5fefdf563a269667ca3'))}',
-          }
-      );
+          });
 
       if (response.statusCode == 200) {
         // TÉLÉCHARGEMENT RÉUSSI: Mettre à jour le cache et afficher
-        await prefs.setString(_productsCacheKey, response.body); 
+        await prefs.setString(_productsCacheKey, response.body);
 
         final data = json.decode(response.body) as List<dynamic>;
-        _updateProductState(data); 
-        
+        _updateProductState(data, isOffline: false);
       } else {
         throw Exception('Erreur serveur: ${response.statusCode}');
       }
     } catch (e) {
       // ÉCHEC DU TÉLÉCHARGEMENT (Erreur réseau ou exception)
-      
+
       final cachedDataString = prefs.getString(_productsCacheKey);
-      
+
       if (cachedDataString != null && cachedDataString.isNotEmpty) {
         // Si le cache existe, l'utiliser et notifier l'utilisateur
         final data = json.decode(cachedDataString) as List<dynamic>;
-        _updateProductState(data);
-        
-        setState(() {
-           isLoading = false;
-           errorMessage = 'Mode hors ligne activé. Données potentiellement obsolètes.';
-        });
-        
+        _updateProductState(data, isOffline: true);
       } else {
         // Pas de connexion ET pas de cache : Afficher une erreur critique
         setState(() {
           isLoading = false;
-          errorMessage = 'Erreur de connexion et aucune donnée locale disponible.';
+          errorMessage = 'CONNECTION_ERROR';
+          // _isOfflineMode = false; // removed undefined variable
         });
       }
     }
@@ -145,26 +141,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final bool isProductListEmpty = filteredProducts.isEmpty && !isLoading;
-    
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         centerTitle: true,
         title: _isSearching
             ? TextField(
                 controller: _searchController,
                 autofocus: true,
-                decoration: const InputDecoration(
-                  hintText: 'Rechercher...',
+                decoration: InputDecoration(
+                  hintText: loc.productSearchHint,
                   border: InputBorder.none,
-                  hintStyle: TextStyle(color: Colors.black54),
+                  hintStyle: TextStyle(color: Theme.of(context).hintColor),
                 ),
-                style: const TextStyle(color: Colors.black),
+                style: TextStyle(
+                    color: Theme.of(context).textTheme.bodyLarge?.color),
                 onChanged: _searchProducts,
               )
             : Image.asset(height: 55, 'assets/icon.png'),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         actions: [
           IconButton(
             icon: Icon(
@@ -187,7 +185,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
       body: isLoading
           ? const ShimmerLoadingList()
           : isProductListEmpty && errorMessage.isEmpty
-              ? Center(child: Text(_isSearching ? 'Aucun produit trouvé pour cette recherche.' : 'Aucun produit n\'est disponible.'))
+              ? Center(
+                  child: Text(
+                    _isSearching ? loc.productEmptySearch : loc.productEmpty,
+                  ),
+                )
               : RefreshIndicator(
                   onRefresh: fetchProducts,
                   child: Column(
@@ -195,17 +197,22 @@ class _ProductListScreenState extends State<ProductListScreen> {
                       // Affichage du message d'erreur ou du mode hors ligne en haut
                       if (errorMessage.isNotEmpty)
                         Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 8.0, horizontal: 16.0),
                           child: Text(
-                            errorMessage,
+                            errorMessage.contains('Mode hors ligne')
+                                ? loc.offlineMode
+                                : loc.offlineError,
                             style: TextStyle(
-                              color: errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
+                              color: errorMessage.contains('Mode hors ligne')
+                                  ? Colors.orange
+                                  : Colors.red,
                               fontWeight: FontWeight.bold,
                             ),
                             textAlign: TextAlign.center,
                           ),
                         ),
-                      
+
                       // Liste des produits si elle n'est pas vide
                       if (!isProductListEmpty)
                         Expanded(
@@ -227,18 +234,24 @@ class _ProductListScreenState extends State<ProductListScreen> {
                                       ),
                                     ),
                                   ),
-                                  SizedBox(
-                                    height: 260,
-                                    child: ListView.builder(
-                                      scrollDirection: Axis.horizontal,
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16.0, vertical: 8.0),
+                                    child: GridView.builder(
+                                      shrinkWrap: true,
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      gridDelegate:
+                                          const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 0.68,
+                                        crossAxisSpacing: 10,
+                                        mainAxisSpacing: 10,
+                                      ),
                                       itemCount: products.length,
                                       itemBuilder: (context, index) {
-                                        return Container(
-                                          width: 160,
-                                          margin:
-                                              const EdgeInsets.symmetric(horizontal: 8),
-                                          child: ProductCard(product: products[index]),
-                                        );
+                                        return ProductCard(
+                                            product: products[index]);
                                       },
                                     ),
                                   ),
@@ -263,18 +276,20 @@ class ShimmerLoadingList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Couleurs claires pour l'effet Shimmer
-    final Color baseColor = Colors.grey[300]!;
-    final Color highlightColor = Colors.grey[100]!;
+    // Couleurs adaptées au thème pour l'effet Shimmer
+    final bool isDark = Theme.of(context).brightness == Brightness.dark;
+    final Color baseColor = isDark ? Colors.grey[800]! : Colors.grey[300]!;
+    final Color highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
 
     return Shimmer.fromColors(
       baseColor: baseColor,
       highlightColor: highlightColor,
       child: SingleChildScrollView(
-        physics: const NeverScrollableScrollPhysics(), 
+        physics: const NeverScrollableScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: List.generate(3, (i) { // Simule 3 sections de catégories
+          children: List.generate(3, (i) {
+            // Simule 3 sections de catégories
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -285,64 +300,69 @@ class ShimmerLoadingList extends StatelessWidget {
                     width: 150,
                     height: 20,
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
                 ),
-                
-                // 2. Simuler la Liste Horizontale (Row de ProductCard)
-                SizedBox(
-                  height: 260,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
+
+                // 2. Simuler la Grille Verticale
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 0.68,
+                      crossAxisSpacing: 10,
+                      mainAxisSpacing: 10,
+                    ),
                     itemCount: 4, // Simule 4 produits par catégorie
                     itemBuilder: (context, index) {
-                      return Container(
-                        width: 160,
-                        margin: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Simuler l'Image (grande boîte)
-                            Container(
-                              height: 160,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Simuler l'Image (grande boîte)
+                          Expanded(
+                            child: Container(
                               width: double.infinity,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: Theme.of(context).cardColor,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            // Simuler le Nom du Produit (Ligne 1)
-                            Container(
-                              width: double.infinity,
-                              height: 10,
-                              color: Colors.white,
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            ),
-                            // Simuler le Nom du Produit (Ligne 2)
-                            Container(
-                              width: 80,
-                              height: 10,
-                              color: Colors.white,
-                              margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            ),
-                            const SizedBox(height: 8),
-                            // Simuler le Prix
-                            Container(
-                              width: 60,
-                              height: 12,
-                              color: Colors.white,
-                              margin: const EdgeInsets.symmetric(horizontal: 8),
-                            ),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Simuler le Nom du Produit (Ligne 1)
+                          Container(
+                            width: double.infinity,
+                            height: 10,
+                            color: Theme.of(context).cardColor,
+                            margin: const EdgeInsets.symmetric(vertical: 2),
+                          ),
+                          // Simuler le Nom du Produit (Ligne 2)
+                          Container(
+                            width: 80,
+                            height: 10,
+                            color: Theme.of(context).cardColor,
+                            margin: const EdgeInsets.symmetric(vertical: 2),
+                          ),
+                          const SizedBox(height: 8),
+                          // Simuler le Prix
+                          Container(
+                            width: 60,
+                            height: 12,
+                            color: Theme.of(context).cardColor,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
                       );
                     },
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
             );
           }),

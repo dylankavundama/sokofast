@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:soko/Screen/bottonNav.dart';
 import 'package:soko/Auth/loginPage.dart';
+import 'package:soko/l10n/app_localizations.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -60,25 +61,29 @@ class _SplashScreenState extends State<SplashScreen> {
     return showDialog<bool>(
       context: context,
       barrierDismissible: false, // Empêche le dialogue de se fermer en cliquant à l'extérieur
-      builder: (_) => AlertDialog(
-        title: const Text("Créer un compte"),
-        content: const Text("Souhaitez-vous créer un compte pour passer des commandes ?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text("Non"),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text("Oui"),
-          ),
-        ],
-      ),
+      builder: (_) {
+        final loc = AppLocalizations.of(context);
+        return AlertDialog(
+          title: Text(loc.splashCreateAccountTitle),
+          content: Text(loc.splashCreateAccountContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(loc.splashNo),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(loc.splashYes),
+            ),
+          ],
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+      final loc = AppLocalizations.of(context);
       return Scaffold(
       backgroundColor:   Colors.white,
       body: Column(
@@ -111,11 +116,11 @@ class _SplashScreenState extends State<SplashScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'From ',
+                  loc.splashFrom,
                   style: GoogleFonts.abel(fontSize: 18, color: Colors.black),
                 ),
                 Text(
-                  'Next Byte Technology',
+                  ' ${loc.splashCompany}',
                   style: GoogleFonts.abel(
                     fontSize: 18,
                     color: Colors.black,

@@ -1,0 +1,179 @@
+class CheckoutStepper extends StatefulWidget {
+  final List<dynamic> cities;
+  final Function(String city, String quartier, String avenue, String phone)
+      onConfirm;
+
+  const CheckoutStepper({
+    Key? key,
+    required this.cities,
+    required this.onConfirm,
+  }) : super(key: key);
+
+  @override
+  _CheckoutStepperState createState() => _CheckoutStepperState();
+}
+
+class _CheckoutStepperState extends State<CheckoutStepper> {
+  int _currentStep = 0;
+  String? _selectedCity;
+  final _quartierController = TextEditingController();
+  final _avenueController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _quartierController.dispose();
+    _avenueController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  bool _validatePhoneNumber(String phone) {
+    final RegExp phoneRegex = RegExp(r'^243[0-9]{9}$');
+    return phoneRegex.hasMatch(phone);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Fallback simple si AppLocalizations n'est pas dispo dans ce contexte (ce qui peut arriver si hors de l'arbre principal)
+    // Mais ici on est dans CartScreen, donc ça devrait aller.
+    // On utilise des Strings en dur ou on passe les locs en props si besoin.
+    // Pour l'instant on met en dur en français comme demandé.
+
+    return Container(
+      height: 500, // Hauteur fixe ou dynamique
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          const Text(
+            'Finaliser la commande',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: Stepper(
+              type: StepperType.horizontal,
+              currentStep: _currentStep,
+              onStepContinue: () {
+                if (_currentStep == 0) {
+                  if (_selectedCity == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Veuillez sélectionner une ville')),
+                    );
+                    return;
+                  }
+                } else if (_currentStep == 1) {
+                  if (_quartierController.text.isEmpty ||
+                      _avenueController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text('Veuillez remplir tous les champs')),
+                    );
+                    return;
+                  }
+                } else if (_currentStep == 2) {
+                  if (!_validatePhoneNumber(_phoneController.text)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text(
+                              'Numéro invalide (Format: 243xxxxxxxxx)')),
+                    );
+                    return;
+                  }
+                  // Finaliser
+                  widget.onConfirm(
+                    _selectedCity!,
+                    _quartierController.text,
+                    _avenueController.text,
+                    _phoneController.text,
+                  );
+                  return;
+                }
+
+                setState(() {
+                  if (_currentStep < 2) _currentStep += 1;
+                });
+              },
+              onStepCancel: () {
+                if (_currentStep > 0) {
+                  setState(() {
+                    _currentStep -= 1;
+                  });
+                } else {
+                  Navigator.pop(context);
+                }
+              },
+              steps: [
+                Step(
+                  title: const Text('Ville'),
+                  content: DropdownButtonFormField<String>(
+                    value: _selectedCity,
+                    hint: const Text('Sélectionner votre ville'),
+                    items: widget.cities.map<DropdownMenuItem<String>>((city) {
+                      return DropdownMenuItem<String>(
+                        value: city['nom'],
+                        child: Text(city['nom']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCity = value;
+                      });
+                    },
+                  ),
+                  isActive: _currentStep >= 0,
+                  state: _currentStep > 0
+                      ? StepState.complete
+                      : StepState.indexed,
+                ),
+                Step(
+                  title: const Text('Adresse'),
+                  content: Column(
+                    children: [
+                      TextField(
+                        controller: _quartierController,
+                        decoration: const InputDecoration(
+                          labelText: 'Quartier',
+                          hintText: 'Ex: Bandalungwa',
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _avenueController,
+                        decoration: const InputDecoration(
+                          labelText: 'Avenue & Numéro',
+                          hintText: 'Ex: Kasa-Vubu 123',
+                        ),
+                      ),
+                    ],
+                  ),
+                  isActive: _currentStep >= 1,
+                  state: _currentStep > 1
+                      ? StepState.complete
+                      : StepState.indexed,
+                ),
+                Step(
+                  title: const Text('Contact'),
+                  content: TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly
+                    ],
+                    decoration: const InputDecoration(
+                      labelText: 'Numéro Mobile Money',
+                      hintText: '243xxxxxxxxx',
+                      helperText: 'Pour le paiement FlexPay',
+                    ),
+                  ),
+                  isActive: _currentStep >= 2,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

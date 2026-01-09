@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soko/api_config.dart';
-import 'package:soko/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -13,6 +12,7 @@ import 'package:geolocator/geolocator.dart'; // 💡 NOUVEL IMPORT
 
 // Importez vos fichiers de support
 import 'package:soko/OrderHistoryScreen.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
 
 class CartScreen extends StatefulWidget {
@@ -30,6 +30,9 @@ class _CartScreenState extends State<CartScreen> {
   // États locaux
   List<Map<String, dynamic>> cartItems = [];
   String? loggedInUserName;
+  List<dynamic> _cities = [];
+  bool _isLoadingCities = false;
+  int? _selectedCityId; // 💡 Stocker l'ID de la ville sélectionnée
 
   // 💡 NOUVEL ÉTAT POUR LA GÉOLOCALISATION
   Position? _currentPosition;
@@ -47,6 +50,35 @@ class _CartScreenState extends State<CartScreen> {
     _loadCartLocally();
     _loadLoggedInUser();
     _getCurrentLocation(); // 💡 Déclenche la recherche de la position au démarrage
+    _fetchCities();
+  }
+
+  Future<void> _fetchCities() async {
+    setState(() => _isLoadingCities = true);
+    try {
+      final response =
+          await http.get(Uri.parse('${ApiConfig.BASE_URL}/get_villes.php'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _cities = data['data'];
+          });
+        }
+      }
+    } catch (e) {
+      print('Erreur récupération villes: $e');
+    } finally {
+      setState(() => _isLoadingCities = false);
+    }
+  }
+
+  // Méthode pour vider le panier
+  Future<void> _clearCart() async {
+    setState(() {
+      cartItems.clear();
+    });
+    await _saveCartLocally();
   }
 
   @override
@@ -55,10 +87,6 @@ class _CartScreenState extends State<CartScreen> {
     phoneController.dispose();
     super.dispose();
   }
-
-  // ------------------------------------------------------------------
-  // LOGIQUE DE GESTION DE L'ÉTAT LOCAL ET UTILISATEUR (INCHANGÉE)
-  // ------------------------------------------------------------------
 
   Future<void> _loadLoggedInUser() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -93,11 +121,6 @@ class _CartScreenState extends State<CartScreen> {
     await prefs.setStringList('orderHistory', orders);
   }
 
-  // ------------------------------------------------------------------
-  // LOGIQUE DE GÉOLOCALISATION (GPS & Géocodage)
-  // ------------------------------------------------------------------
-
-  // 💡 FONCTION DE L'UTILISATEUR MISE À JOUR AVEC VÉRIFICATION DES PERMISSIONS
   void _getCurrentLocation() async {
     setState(() {
       _isLocating = true;
@@ -124,7 +147,6 @@ class _CartScreenState extends State<CartScreen> {
           desiredAccuracy: LocationAccuracy.high);
       setState(() {
         _currentPosition = position;
-        // Optionnel : Tentative de pré-remplir l'adresse à partir des coordonnées (nécessiterait Reverse Geocoding)
       });
     } catch (e) {
       print("Erreur de géolocalisation: $e");
@@ -152,10 +174,6 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  // ------------------------------------------------------------------
-  // LOGIQUE DE COMMANDE ET FLEXPAY (MISE À JOUR)
-  // ------------------------------------------------------------------
-
   String _generateFlexPayReference() {
     return 'SOKO-${DateTime.now().millisecondsSinceEpoch}';
   }
@@ -170,31 +188,25 @@ class _CartScreenState extends State<CartScreen> {
     final name = loggedInUserName!;
     final clientPhoneNumber = phoneController.text.trim();
 
+    final loc = AppLocalizations.of(context);
     if (!_validatePhoneNumber(clientPhoneNumber)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Format de numéro de téléphone invalide (Ex: 243812345678).')),
+        SnackBar(content: Text(loc.cartInvalidPhoneFormat)),
       );
       return;
     }
 
-    // 💡 LOGIQUE DE PRIORITÉ DE LOCALISATION (Inchangée)
     double? latitude;
     double? longitude;
 
     if (_currentPosition != null) {
-      // Priorité 1: Position GPS en direct
       latitude = _currentPosition!.latitude;
       longitude = _currentPosition!.longitude;
     } else {
-      // Priorité 2: Fallback au géocodage de l'adresse
       final coords = await _geocodeAddress(address);
       if (coords == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text(
-                  'Adresse de livraison introuvable. Veuillez activer le GPS ou affiner l\'adresse.')),
+          SnackBar(content: Text(loc.cartAddressNotFound)),
         );
         return;
       }
@@ -202,8 +214,6 @@ class _CartScreenState extends State<CartScreen> {
       longitude = coords['longitude'];
     }
 
-    // --- 💡 CORRECTION : CALCUL DU MONTANT TOTAL AVEC 30% SUPPLÉMENTAIRE ---
-    // 1. Calcul du montant total des produits (Base)
     final double baseAmount = cartItems.fold(
       0.0,
       (sum, item) =>
@@ -212,39 +222,27 @@ class _CartScreenState extends State<CartScreen> {
               item['quantity']),
     );
 
-    // 2. Calcul du supplément (30% de la base)
-    final double surcharge = baseAmount * 0.30; // 30%
-
-    // 3. Montant final à facturer
+    final double surcharge = baseAmount * 0.30;
     final double totalAmount = baseAmount + surcharge;
-    // ------------------------------------------------------------------------
 
     if (totalAmount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Le montant total est nul ou négatif.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(loc.cartTotalZero)));
       return;
     }
 
     final String referenceId = _generateFlexPayReference();
-    // Utilisation du montant final avec 30% pour la passerelle FlexPay
     final String amountString = totalAmount.toStringAsFixed(0);
 
-    // 1. Préparation du corps de la requête FlexPay
     final requestBody = jsonEncode({
       "merchant": _MERCHANT_ID,
-      "type": "1", // Mobile Money
+      "type": "1",
       "phone": clientPhoneNumber,
       "reference": referenceId,
-      // Le montant inclut maintenant les 30%
       "amount": amountString,
       "currency": "USD",
       "callbackUrl": _CALLBACK_URL,
     });
-
-    // ... (Le reste de la fonction reste inchangé) ...
-    // Le code de traitement de la réponse et l'appel à sendOrderToDatabase
-    // utilisent le nouveau `totalAmount` calculé.
-    // ...
     try {
       final response = await http.post(
         Uri.parse(_FLEXPAY_GATEWAY_URL),
@@ -262,24 +260,22 @@ class _CartScreenState extends State<CartScreen> {
           responseData['message'] ?? 'Erreur inconnue de la passerelle.';
 
       if (code == '0') {
-        // 3. Enregistrer la commande
         await sendOrderToDatabase(
             context: context,
             name: name,
             address: address,
             transactionId: referenceId,
             products: cartItems,
-            // Utilise le montant total avec 30%
             totalPrice: totalAmount,
             paymentMethod: "FlexPay :$clientPhoneNumber",
             status: 'PENDING',
-            latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES
-            longitude: longitude);
+            latitude: latitude,
+            longitude: longitude,
+            villeId: _selectedCityId ?? 1);
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-                "Paiement initié. Veuillez valider la demande sur votre téléphone (numéro : $clientPhoneNumber)."),
+            content: Text(loc.cartPaymentInitiated(clientPhoneNumber)),
             backgroundColor: Colors.blue,
             duration: const Duration(seconds: 7),
           ),
@@ -288,8 +284,7 @@ class _CartScreenState extends State<CartScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text("Échec de l'initiation du paiement FlexPay: $message"),
+            content: Text(loc.cartFlexpayFailed(message)),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 6),
           ),
@@ -299,7 +294,7 @@ class _CartScreenState extends State<CartScreen> {
       print('Erreur générale FlexPay: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur inattendue: ${e.toString()}'),
+          content: Text(loc.cartUnexpectedError(e.toString())),
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 6),
         ),
@@ -313,24 +308,47 @@ class _CartScreenState extends State<CartScreen> {
     required String address,
     required String transactionId,
     required List<Map<String, dynamic>> products,
-    required double
-        totalPrice, // Montant TOTAL avec 30% pour l'enregistrement local
+    required double totalPrice,
     required String paymentMethod,
-    String status = 'en cours', // Statut par défaut
-    double? latitude, // 💡 PARAMÈTRE MIS À JOUR
-    double? longitude, // 💡 PARAMÈTRE MIS À JOUR
+    String status = 'en cours',
+    double? latitude,
+    double? longitude,
+    required int villeId,
   }) async {
-    final url = '$baseUrl/commande.php';
+    final url = 'https://sokofast.com/backend/commande.php';
+    print('Envoi de la commande à: $url');
+    print('Données de la commande:');
+    print('- Nom: $name');
+    print('- Adresse: $address');
+    print('- ID de transaction: $transactionId');
+    print('- Nombre de produits: ${products.length}');
+    print('- Montant total: $totalPrice');
+    print('- Méthode de paiement: $paymentMethod');
 
     try {
       for (final product in products) {
         final double productPrice =
             double.tryParse(product['product']['price'].toString()) ?? 0.0;
         final int productQuantity = (product['quantity'] as num).toInt();
-
-        // 💡 CORRECTION: Calculer le prix de BASE de la ligne de produit SANS les 30%
         final double calculatedIndividualProductBasePrice =
             productPrice * productQuantity;
+
+        final requestBody = {
+          'name': name,
+          'address': address,
+          'transaction_id': transactionId,
+          'product_name': product['product']['name'],
+          'quantity': productQuantity,
+          'payment_method': paymentMethod,
+          'total_price': calculatedIndividualProductBasePrice,
+          'status': status,
+          'latitude': latitude,
+          'longitude': longitude,
+          'ville_id': villeId,
+        };
+
+        print('Envoi du produit: ${product['product']['name']}');
+        print('Corps de la requête: ${jsonEncode(requestBody)}');
 
         final response = await http.post(
           Uri.parse(url),
@@ -338,36 +356,25 @@ class _CartScreenState extends State<CartScreen> {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
-          body: jsonEncode({
-            'name': name,
-            'address': address,
-            'transaction_id': transactionId,
-            'product_name': product['product']['name'],
-            'quantity': productQuantity,
-            'payment_method': paymentMethod,
-            // 💡 ENVOI du prix de BASE au serveur pour cette ligne
-            'total_price': calculatedIndividualProductBasePrice,
-            'status': status,
-            'latitude': latitude, // 💡 ENVOI
-            'longitude': longitude, // 💡 ENVOI
-          }),
+          body: jsonEncode(requestBody),
         );
 
+        print('Réponse du serveur (${response.statusCode}): ${response.body}');
+
+        final loc = AppLocalizations.of(context);
         if (response.statusCode < 200 || response.statusCode >= 300) {
           throw Exception(
-              'Échec de l\'envoi de la commande au serveur: ${response.statusCode}');
+              '${loc.cartOrderSendFailed(response.statusCode.toString())}\nDétails: ${response.body}');
         }
       }
 
-      // Le `orderData` local stocke le `totalPrice` avec les 30% pour l'affichage dans l'historique
       final orderData = {
         'id': transactionId,
         'date': DateTime.now().toIso8601String(),
         'customerName': name,
         'address': address,
         'products': products,
-        'totalPrice':
-            totalPrice, // C'est ici que le total avec 30% est conservé
+        'totalPrice': totalPrice,
         'paymentMethod': paymentMethod,
         'status': status,
         'latitude': latitude,
@@ -376,28 +383,25 @@ class _CartScreenState extends State<CartScreen> {
 
       await _saveOrderToHistory(orderData);
 
-      // Vider le panier uniquement si le paiement est immédiat (pas PENDING)
-      if (status != 'PENDING') {
-        // Supposons que `setState` et `_saveCartLocally` sont disponibles dans la classe d'état
-        // setState(() => cartItems.clear());
-        // await _saveCartLocally();
+      // Vider le panier après une commande réussie (toujours, après envoi en base de données)
+      await _clearCart();
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Votre commande a été traitée avec succès !"),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 4),
-          ),
-        );
-      }
+      final loc = AppLocalizations.of(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(loc.cartOrderSuccess),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
+        ),
+      );
 
       return orderData;
     } on Exception catch (e) {
       print('Erreur lors de l\'envoi de la commande: $e');
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Erreur: Impossible de traiter la commande. ${e.toString()}'),
+          content: Text(loc.cartOrderProcessError(e.toString())),
           backgroundColor: Colors.red,
         ),
       );
@@ -405,214 +409,133 @@ class _CartScreenState extends State<CartScreen> {
     }
   }
 
-  // Définition de la constante pour le pourcentage, rend le code plus lisible
-  double _SERVICE_FEE_RATE = 0.30; // 30% de supplément (frais de service/livraison)
+  void _orderViaWhatsApp(BuildContext context) async {
+    final address = addressController.text;
 
- void _orderViaWhatsApp(BuildContext context) async {
-  final address = addressController.text;
-
-  // 1. Calcul du montant total de BASE (prix des produits uniquement)
-  const double _SERVICE_FEE_RATE = 0.30; // Réutilisation de la constante
-  final double baseAmount = cartItems.fold(
-    0.0,
-    (sum, item) =>
-        sum +
-        ((double.tryParse(item['product']['price'].toString()) ?? 0) *
-            item['quantity']),
-  );
-
-  // 2. Calcul du supplément (30% de la base)
-  final double surcharge = baseAmount * _SERVICE_FEE_RATE;
-
-  // 3. Montant final à facturer au client
-  final double total = baseAmount + surcharge;
-
-  // 💡 LOGIQUE DE PRIORITÉ DE LOCALISATION (Inchangée)
-  double? latitude;
-  double? longitude;
-
-  if (_currentPosition != null) {
-    // Priorité 1: Position GPS en direct
-    latitude = _currentPosition!.latitude;
-    longitude = _currentPosition!.longitude;
-  } else {
-    // Priorité 2: Fallback au géocodage de l'adresse
-    final coords = await _geocodeAddress(address);
-    if (coords == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text(
-                'Adresse de livraison introuvable. Veuillez activer le GPS ou affiner l\'adresse.')),
-      );
-      return;
-    }
-    latitude = coords['latitude'];
-    longitude = coords['longitude'];
-  }
-
-  // Construction du message WhatsApp
-  final buffer = StringBuffer();
-  buffer.write('Bonjour, je souhaite passer une commande :');
-  
-  // Détail des produits
-  for (var item in cartItems) {
-    final price = double.tryParse(item['product']['price'].toString()) ?? 0.0;
-    final quantity = item['quantity'];
-    buffer.write(
-        '\n- ${item['product']['name']}  : $quantity pièce(s) dont ${(price * 1.30).toStringAsFixed(2)} \$ la pièce'); // Prix avec 30%
-  }
-  
-  // buffer.write('\n\nSous-total (produits) : ${baseAmount.toStringAsFixed(2)} \$');
-  // buffer.write('\nFrais de service (30%) : ${surcharge.toStringAsFixed(2)} \$');
-  buffer.write('\nTotal final à payer : ${total.toStringAsFixed(2)} \$'); // Total incluant les 30%
-
-  buffer.write('\n\nAdresse de livraison : $address');
-  
-  buffer.write('\n\nMon contact: ${phoneController.text.trim()}');
-
-  // 🚀 AJOUT DES COORDONNÉES GPS AU MESSAGE WHATSAPP
-  if (latitude != null && longitude != null) {
-    // buffer.write('\nCoordonnées GPS: $latitude, $longitude');
-    // Facultatif : Ajout d'un lien Google Maps pour un accès facile
-    buffer.write('\n\nLien Carte: https://maps.google.com/?q=$latitude,$longitude');
-  } else {
-    buffer.write('\nCoordonnées GPS: Non disponibles (adresse texte utilisée)');
-  }
-  // --------------------------------------------------------------------
-
-  // Assurez-vous que ce numéro est celui de l'administrateur/livreur
-  const phone = '243992959898';
-  final url = Uri.parse(
-      'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
-
-  try {
-    final orderResult = await sendOrderToDatabase(
-      context: context,
-      name: loggedInUserName!,
-      address: address,
-      transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
-      products: cartItems,
-      // ENVOI du total final (avec 30%) pour l'enregistrement local
-      totalPrice: total,
-      paymentMethod: 'WhatsApp',
-      status: 'en cours',
-      latitude: latitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
-      longitude: longitude, // ENVOI DES COORDONNÉES DÉTERMINÉES (BDD)
+    const double _SERVICE_FEE_RATE = 0.30;
+    final double baseAmount = cartItems.fold(
+      0.0,
+      (sum, item) =>
+          sum +
+          ((double.tryParse(item['product']['price'].toString()) ?? 0) *
+              item['quantity']),
     );
 
-    if (orderResult != null) {
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
+    final double surcharge = baseAmount * _SERVICE_FEE_RATE;
+    final double total = baseAmount + surcharge;
+
+    double? latitude;
+    double? longitude;
+
+    if (_currentPosition != null) {
+      latitude = _currentPosition!.latitude;
+      longitude = _currentPosition!.longitude;
+    } else {
+      final loc = AppLocalizations.of(context);
+      final coords = await _geocodeAddress(address);
+      if (coords == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Impossible d'ouvrir WhatsApp")),
+          SnackBar(content: Text(loc.cartAddressNotFound)),
         );
+        return;
       }
+      latitude = coords['latitude'];
+      longitude = coords['longitude'];
     }
-  } catch (e) {
-    print('Error during WhatsApp order process: $e');
+
+    final loc = AppLocalizations.of(context);
+    final buffer = StringBuffer();
+    buffer.write(loc.cartWhatsappMessage);
+
+    // Détail des produits
+    for (var item in cartItems) {
+      final price = double.tryParse(item['product']['price'].toString()) ?? 0.0;
+      final quantity = item['quantity'];
+      buffer.write(
+          '\n${loc.cartWhatsappProductLine(item['product']['name'], quantity, (price * 1.30).toStringAsFixed(2))}');
+    }
+
+    buffer.write('\n${loc.cartWhatsappTotal(total.toStringAsFixed(2))}');
+    buffer.write('\n\n${loc.cartWhatsappDelivery(address)}');
+    buffer.write('\n\n${loc.cartWhatsappContact(phoneController.text.trim())}');
+
+    if (latitude != null && longitude != null) {
+      buffer.write(
+          '\n\n${loc.cartWhatsappMapLink('https://maps.google.com/?q=$latitude,$longitude')}');
+    } else {
+      buffer.write('\n${loc.cartWhatsappGpsUnavailable}');
+    }
+
+    // Assurez-vous que ce numéro est celui de l'administrateur/livreur
+    const phone = '243992959898';
+    final url = Uri.parse(
+        'https://api.whatsapp.com/send?phone=$phone&text=${Uri.encodeComponent(buffer.toString())}');
+
+    try {
+      final orderResult = await sendOrderToDatabase(
+        context: context,
+        name: loggedInUserName!,
+        address: address,
+        transactionId: 'whatsapp_${DateTime.now().millisecondsSinceEpoch}',
+        products: cartItems,
+        totalPrice: total,
+        paymentMethod: 'WhatsApp',
+        status: 'en cours',
+        latitude: latitude,
+        longitude: longitude,
+        villeId:
+            1, // Default value, you might want to get this from user selection
+      );
+
+      if (orderResult != null) {
+        final loc = AppLocalizations.of(context);
+        if (await canLaunchUrl(url)) {
+          await launchUrl(url, mode: LaunchMode.externalApplication);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(loc.cartCouldNotOpenWhatsapp)),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error during WhatsApp order process: $e');
+    }
   }
-}
-  // ------------------------------------------------------------------
-  // MISE À JOUR DE LA BOÎTE DE DIALOGUE
-  // ------------------------------------------------------------------
+
   void _showAddressDialog(VoidCallback onConfirm) {
     if (cartItems.isEmpty ||
         loggedInUserName == null ||
         loggedInUserName!.isEmpty) return;
 
-    // Mise à jour de l'état pour les coordonnées
-    final String locationStatus = _isLocating
-        ? 'Recherche de la position GPS...'
-        : (_currentPosition != null
-            ? 'Position GPS acquise : ${_currentPosition!.latitude.toStringAsFixed(4)}, ${_currentPosition!.longitude.toStringAsFixed(4)}'
-            : 'Position GPS indisponible. Veuillez saisir l\'adresse.');
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Adresse et Contact'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 💡 Affichage du statut GPS
-                Text(locationStatus,
-                    style: TextStyle(
-                        color: _currentPosition != null
-                            ? Colors.green
-                            : Colors.orange,
-                        fontWeight: FontWeight.bold)),
-                if (_currentPosition == null && !_isLocating)
-                  TextButton.icon(
-                      onPressed: _getCurrentLocation,
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Réessayer la localisation GPS')),
-                const SizedBox(height: 30),
-
-                // Champ Adresse
-                TextField(
-                  controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Votre adresse de livraison (si pas de GPS)',
-                    hintText: 'Ex: 123 Rue de la Paix',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                // Champ Téléphone
-                TextField(
-                  controller: phoneController,
-                  keyboardType: TextInputType.phone,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                  decoration: const InputDecoration(
-                    labelText: 'Numéro Mobile Money (Ex: 243812345678)',
-                    hintText: '243xxxxxxxxx',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Annuler'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Validation : adresse ou GPS doit être disponible
-                if (_currentPosition == null &&
-                    addressController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            "Veuillez remplir l'adresse ou activer le GPS.")),
-                  );
-                } else if (phoneController.text.isEmpty ||
-                    !_validatePhoneNumber(phoneController.text.trim())) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                        content: Text(
-                            "Numéro de téléphone FlexPay manquant ou invalide (243xxxxxxxx).")),
-                  );
-                } else {
-                  Navigator.of(context).pop();
-                  onConfirm();
-                }
-              },
-              child: const Text('Confirmer'),
-            ),
-          ],
-        );
-      },
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: CheckoutStepper(
+          cities: _cities,
+          onConfirm: (villeId, city, quartier, avenue, phone) {
+            setState(() {
+              _selectedCityId = villeId;
+              addressController.text = '$avenue, $quartier, $city';
+              phoneController.text = phone;
+            });
+            Navigator.pop(context); // Fermer le BottomSheet
+            onConfirm(); // Exécuter l'action de confirmation
+          },
+        ),
+      ),
     );
   }
-// Si vous voulez aussi afficher le prix unitaire ajusté (13.00 $ x 1 = 13.00 $)
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     double totalAmount = cartItems.fold(
       0.0,
       (double sum, item) {
@@ -621,7 +544,7 @@ class _CartScreenState extends State<CartScreen> {
         return sum + (price * item['quantity']);
       },
     );
-// 1. Calculer le montant de base (Sous-total)
+
     final double baseAmount = cartItems.fold(
       0.0,
       (double sum, item) {
@@ -639,10 +562,15 @@ class _CartScreenState extends State<CartScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: backdColor,
-        title: const Text('Mon Panier', style: TextStyle(color: Colors.white)),
+        title: Text(loc.cartTitle,
+            style: TextStyle(
+                color: Theme.of(context).appBarTheme.foregroundColor ??
+                    Colors.white)),
         actions: [
           IconButton(
-            icon: const Icon(Icons.history, color: Colors.white),
+            icon: Icon(Icons.history,
+                color: Theme.of(context).appBarTheme.foregroundColor ??
+                    Colors.white),
             onPressed: () {
               Navigator.push(
                 context,
@@ -657,7 +585,7 @@ class _CartScreenState extends State<CartScreen> {
         children: [
           Expanded(
             child: cartItems.isEmpty
-                ? const Center(child: Text('Votre panier est vide'))
+                ? Center(child: Text(loc.cartEmpty))
                 : ListView(
                     children: [
                       ...cartItems.map((item) {
@@ -682,8 +610,6 @@ class _CartScreenState extends State<CartScreen> {
                             style: GoogleFonts.abel(),
                           ),
                           subtitle: Text(
-                            // Calcule le prix unitaire ajusté: price * 1.30
-                            // Multiplie par la quantité pour obtenir le nouveau sous-total.
                             '${(price * quantity * 1.30).toStringAsFixed(2)} \$ x $quantity ',
                           ),
                           trailing: IconButton(
@@ -692,9 +618,7 @@ class _CartScreenState extends State<CartScreen> {
                               setState(() => cartItems.remove(item));
                               _saveCartLocally();
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Produit supprimé du panier')),
+                                SnackBar(content: Text(loc.cartDeleted)),
                               );
                             },
                           ),
@@ -707,7 +631,7 @@ class _CartScreenState extends State<CartScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.grey.withOpacity(0.5),
@@ -722,53 +646,25 @@ class _CartScreenState extends State<CartScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 1. Ligne du Sous-total
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      //   children: [
-                      //     const Text('Sous-total:',
-                      //         style: TextStyle(fontSize: 16)),
-                      //     Text('${baseAmount.toStringAsFixed(2)} \$',
-                      //         style: const TextStyle(fontSize: 16)),
-                      //   ],
-                      // ),
-
-                      // 2. Ligne des Frais de service (30%)
-                      // Row(
-                      //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      //   children: [
-                      //     const Text('Frais de livraison & service:',
-                      //         style:
-                      //             TextStyle(fontSize: 16, color: Colors.red)),
-                      //     Text('+ ${surcharge.toStringAsFixed(2)} \$',
-                      //         style: const TextStyle(
-                      //             fontSize: 16, color: Colors.red)),
-                      //   ],
-                      // ),
-
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          const Text(
-                            'Tout frais inclus',
-                            style: TextStyle(fontSize: 16, color: Colors.red),
+                          Text(
+                            loc.cartAllFeesIncluded,
+                            style: const TextStyle(
+                                fontSize: 16, color: Colors.red),
                           ),
-                        
                         ],
                       ),
-
-                      const Divider(), // Séparateur visuel
-
-                      // 3. Ligne du Total final (en gras, comme demandé initialement)
+                      const Divider(),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Total Final:',
-                              style: TextStyle(
+                          Text(loc.cartTotalFinal,
+                              style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
-                          Text(
-                              '${tottalAmount.toStringAsFixed(2)}+ \$', // Montant avec les 30%
+                          Text('${tottalAmount.toStringAsFixed(2)} \$',
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                         ],
@@ -782,8 +678,8 @@ class _CartScreenState extends State<CartScreen> {
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.telegram,
                               size: 19, color: Colors.white),
-                          label: const Text('WhatsApp',
-                              style: TextStyle(color: Colors.white)),
+                          label: Text(loc.cartWhatsapp,
+                              style: const TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.green,
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -797,8 +693,8 @@ class _CartScreenState extends State<CartScreen> {
                         child: ElevatedButton.icon(
                           icon: const Icon(Icons.mobile_friendly,
                               color: Colors.white),
-                          label: const Text('Mobile Money',
-                              style: TextStyle(color: Colors.white)),
+                          label: Text(loc.cartMobileMoney,
+                              style: const TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.orange,
                             padding: const EdgeInsets.symmetric(vertical: 14),
@@ -812,6 +708,205 @@ class _CartScreenState extends State<CartScreen> {
                 ],
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class CheckoutStepper extends StatefulWidget {
+  final List<dynamic> cities;
+  final Function(
+          int cityId, String city, String quartier, String avenue, String phone)
+      onConfirm;
+
+  const CheckoutStepper({
+    Key? key,
+    required this.cities,
+    required this.onConfirm,
+  }) : super(key: key);
+
+  @override
+  _CheckoutStepperState createState() => _CheckoutStepperState();
+}
+
+class _CheckoutStepperState extends State<CheckoutStepper> {
+  int _currentStep = 0;
+  int? _selectedCityId;
+  final _quartierController = TextEditingController();
+  final _avenueController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _quartierController.dispose();
+    _avenueController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  bool _validatePhoneNumber(String phone) {
+    final RegExp phoneRegex = RegExp(r'^243[0-9]{9}$');
+    return phoneRegex.hasMatch(phone);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context)!;
+
+    return Container(
+      height: 500, // Hauteur fixe ou dynamique
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Text(
+            loc.cartStepFinalizing,
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          Expanded(
+            child: Stepper(
+              type: StepperType.vertical,
+              currentStep: _currentStep,
+              onStepContinue: () {
+                if (_currentStep == 0) {
+                  if (_selectedCityId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(loc.cartStepVilleSelectError)),
+                    );
+                    return;
+                  }
+                } else if (_currentStep == 1) {
+                  if (_quartierController.text.isEmpty ||
+                      _avenueController.text.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(loc.cartStepFillAll)),
+                    );
+                    return;
+                  }
+                } else if (_currentStep == 2) {
+                  if (!_validatePhoneNumber(_phoneController.text)) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(loc.cartStepPhoneInvalid)),
+                    );
+                    return;
+                  }
+                  // Finaliser
+                  final cityName = widget.cities.firstWhere(
+                      (c) => c['id'] == _selectedCityId,
+                      orElse: () => {'nom': loc.commonUnknown})['nom'];
+
+                  widget.onConfirm(
+                    _selectedCityId!,
+                    cityName,
+                    _quartierController.text,
+                    _avenueController.text,
+                    _phoneController.text,
+                  );
+                  return;
+                }
+
+                setState(() {
+                  if (_currentStep < 2) _currentStep += 1;
+                });
+              },
+              onStepCancel: () {
+                if (_currentStep > 0) {
+                  setState(() {
+                    _currentStep -= 1;
+                  });
+                } else {
+                  Navigator.pop(context);
+                }
+              },
+              controlsBuilder: (BuildContext context, ControlsDetails details) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: Row(
+                    children: <Widget>[
+                      ElevatedButton(
+                        onPressed: details.onStepContinue,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: backdColor,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: Text(_currentStep == 2
+                            ? loc.cartDialogConfirm
+                            : loc.cartStepContinue),
+                      ),
+                      const SizedBox(width: 8),
+                      TextButton(
+                        onPressed: details.onStepCancel,
+                        child: Text(loc.cartStepCancel),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              steps: [
+                Step(
+                  title: Text(loc.cartStepVilleTitle),
+                  content: DropdownButtonFormField<int>(
+                    value: _selectedCityId,
+                    hint: Text(loc.cartStepVilleHint),
+                    items: widget.cities.map<DropdownMenuItem<int>>((city) {
+                      return DropdownMenuItem<int>(
+                        value: city['id'],
+                        child: Text(city['nom']),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCityId = value;
+                      });
+                    },
+                  ),
+                  isActive: _currentStep >= 0,
+                  state:
+                      _currentStep > 0 ? StepState.complete : StepState.indexed,
+                ),
+                Step(
+                  title: Text(loc.cartStepAddressTitle),
+                  content: Column(
+                    children: [
+                      TextField(
+                        controller: _quartierController,
+                        decoration: InputDecoration(
+                          labelText: loc.cartStepQuartierLabel,
+                          hintText: loc.cartStepQuartierHint,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _avenueController,
+                        decoration: InputDecoration(
+                          labelText: loc.cartStepAvenueLabel,
+                          hintText: loc.cartStepAvenueHint,
+                        ),
+                      ),
+                    ],
+                  ),
+                  isActive: _currentStep >= 1,
+                  state:
+                      _currentStep > 1 ? StepState.complete : StepState.indexed,
+                ),
+                Step(
+                  title: Text(loc.cartStepContactTitle),
+                  content: TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: InputDecoration(
+                      labelText: loc.cartStepMobileMoneyLabel,
+                      hintText: loc.cartStepMobileMoneyHint,
+                      helperText: loc.cartStepMobileMoneyHelper,
+                    ),
+                  ),
+                  isActive: _currentStep >= 2,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

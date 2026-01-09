@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soko/Auth/loginPage.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -13,25 +14,6 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _controller = PageController();
   int _currentPage = 0;
-
-  // Données adaptées à une application de vente de produits électroniques
-  final List<Map<String, String>> onboardingData = const [
-    {
-      "title": "Bienvenue chez SOKO FAST",
-      "description": "Découvrez notre vaste sélection de gadgets, ordinateurs et accessoires high-tech.",
-      "image": "assets/a.jpg"
-    },
-    {
-      "title": "Une Technologie à Portée de Main",
-      "description": "Naviguez facilement et trouvez les appareils qui correspondent à votre style de vie en quelques clics.",
-      "image": "assets/b.jpg"
-    },
-    {
-      "title": "Livraison Rapide et Sécurisée",
-      "description": "Recevez vos derniers produits technologiques directement chez vous, rapidement et en toute sécurité.",
-      "image": "assets/c.jpg"
-    }
-  ];
 
   @override
   void dispose() {
@@ -53,6 +35,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
+
+    // Données adaptées à une application de vente de produits électroniques, traduites
+    final List<Map<String, String>> onboardingData = [
+      {
+        "title": loc.onb1Title,
+        "description": loc.onb1Desc,
+        "image": "assets/a.jpg"
+      },
+      {
+        "title": loc.onb2Title,
+        "description": loc.onb2Desc,
+        "image": "assets/b.jpg"
+      },
+      {
+        "title": loc.onb3Title,
+        "description": loc.onb3Desc,
+        "image": "assets/c.jpg"
+      }
+    ];
+
     return Scaffold(
       body: Stack(
         children: [
@@ -84,7 +87,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     child: TextButton(
                       onPressed: _skipOnboarding,
                       child: Text(
-                        "Sauter",
+                        loc.onbSkip,
                         style: TextStyle(
                           color: primaryYellow, fontSize: 16, fontWeight: FontWeight.bold),
                       ),
@@ -123,9 +126,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                child: const Text(
-                                  "Commencer",
-                                  style: TextStyle(fontSize: 15, color: Colors.white),
+                                child: Text(
+                                  loc.onbStart,
+                                  style: const TextStyle(fontSize: 15, color: Colors.white),
                                 ),
                               )
                             : ElevatedButton(
@@ -141,9 +144,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                                child: const Text(
-                                  "Suivant",
-                                  style: TextStyle(fontSize: 18, color: Colors.white),
+                                child: Text(
+                                  loc.onbNext,
+                                  style: const TextStyle(fontSize: 18, color: Colors.white),
                                 ),
                               ),
                       ),

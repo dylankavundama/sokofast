@@ -5,13 +5,11 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-// import 'package:soko/style.dart'; // Supposé être un fichier de style local
 import 'package:shared_preferences/shared_preferences.dart';
-// NOUVEAUX IMPORTS POUR APPLE
 import 'package:sign_in_with_apple/sign_in_with_apple.dart' as apple;
 import 'package:soko/Screen/bottonNav.dart';
+import 'package:soko/l10n/app_localizations.dart';
 
-// Utilitaires de sécurité pour Apple Sign-In
 String generateNonce({int length = 32}) {
   const charset =
       '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
@@ -33,36 +31,28 @@ class _LoginPageState extends State<LoginPage> {
   String _error = '';
   bool _isLoading = false;
 
-  // --- START: Méthodes de Gestion de Session (Corrigent l'erreur) ---
-
-  // ✅ SAUVEGARDER LES DONNÉES UTILISATEUR DANS SHARED_PREFERENCES
   Future<void> _saveUserData(User user) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_email', user.email ?? '');
-      await prefs.setString('user_name', user.displayName ?? 'Utilisateur');
+      await prefs.setString('user_name', user.displayName ?? '');
       await prefs.setString('user_photo_url', user.photoURL ?? '');
       await prefs.setString('user_id', user.uid);
       await prefs.setBool('is_logged_in', true);
-      
-      print("✅ Données utilisateur sauvegardées: ${user.email}");
     } catch (e) {
-      print("❌ Erreur sauvegarde utilisateur: $e");
+      print("Erreur sauvegarde utilisateur: $e");
     }
   }
-
-  // 🔎 VÉRIFIER SI UN UTILISATEUR EST DÉJÀ CONNECTÉ
   Future<bool> _checkExistingUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool('is_logged_in') ?? false;
     } catch (e) {
-      print("❌ Erreur vérification connexion: $e");
+      print("Erreur vérification connexion: $e");
       return false;
     }
   }
 
-  // ✅ RÉCUPÉRER LES DONNÉES UTILISATEUR (Méthode statique inchangée)
   static Future<Map<String, String>> getUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -73,12 +63,11 @@ class _LoginPageState extends State<LoginPage> {
         'uid': prefs.getString('user_id') ?? '',
       };
     } catch (e) {
-      print("❌ Erreur récupération données utilisateur: $e");
+      print("Erreur récupération données utilisateur: $e");
       return {};
     }
   }
 
-  // ✅ DÉCONNEXION ET SUPPRESSION DES DONNÉES (Méthode statique inchangée)
   static Future<void> logoutUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -88,20 +77,13 @@ class _LoginPageState extends State<LoginPage> {
       await prefs.remove('user_id');
       await prefs.remove('is_logged_in');
       
-      // Déconnexion Google
       await GoogleSignIn().signOut();
-      // Déconnexion Firebase
       await FirebaseAuth.instance.signOut();
-      
-      print("✅ Utilisateur déconnecté et données supprimées");
     } catch (e) {
-      print("❌ Erreur déconnexion: $e");
+      print("Erreur déconnexion: $e");
     }
   }
-  
-  // --- END: Méthodes de Gestion de Session ---
 
-  // ✅ UTILITAIRE: NAVIGUER VERS L'ÉCRAN PRINCIPAL
   void _navigateToHome() {
     if (mounted) {
       Navigator.pushReplacement(
@@ -110,37 +92,37 @@ class _LoginPageState extends State<LoginPage> {
       );
     }
   }
-  
-  // ✅ UTILITAIRE: GÉRER LES ERREURS FIREBASE
-  void _handleAuthError(FirebaseAuthException e) {
+
+  void _handleAuthError(FirebaseAuthException e, AppLocalizations loc) {
     setState(() {
       _isLoading = false;
       if (e.code == 'account-exists-with-different-credential') {
-        _error = 'Un compte existe déjà avec cet email.';
+        _error = loc.loginErrorAccountExists;
       } else if (e.code == 'invalid-credential') {
-        _error = 'Identifiants invalides. Veuillez réessayer.';
+        _error = loc.loginErrorInvalidCredential;
       } else if (e.code == 'user-disabled') {
-        _error = 'Ce compte a été désactivé.';
+        _error = loc.loginErrorUserDisabled;
       } else if (e.code == 'user-not-found') {
-        _error = 'Aucun compte trouvé avec cet email.';
+        _error = loc.loginErrorUserNotFound;
       } else if (e.code == 'wrong-password') {
-        _error = 'Mot de passe incorrect.';
+        _error = loc.loginErrorWrongPassword;
       } else {
-        _error = 'Échec de la connexion. Veuillez réessayer.';
+        _error = loc.loginErrorGeneric;
       }
     });
   }
 
   // ✅ UTILITAIRE: GÉRER LES ERREURS GÉNÉRIQUES
-  void _handleGenericError(dynamic e, String defaultMessage) {
+  void _handleGenericError(dynamic e, AppLocalizations loc, {bool isGoogle = false}) {
     setState(() {
       _isLoading = false;
-      _error = defaultMessage;
+      _error = isGoogle ? loc.loginErrorGoogleFailed : loc.loginErrorAppleFailed;
     });
   }
 
   // 1. FONCTION DE CONNEXION GOOGLE
   Future<void> signInWithGoogle() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _isLoading = true;
       _error = '';
@@ -174,16 +156,17 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception("Utilisateur null après connexion Google");
       }
     } on FirebaseAuthException catch (e) {
-      _handleAuthError(e);
+      _handleAuthError(e, loc);
       print('Erreur Firebase Auth (Google): $e');
     } catch (e) {
-      _handleGenericError(e, 'Échec de la connexion Google. Veuillez réessayer.');
+      _handleGenericError(e, loc, isGoogle: true);
       print('Erreur de connexion Google: $e');
     }
   }
 
   // 2. FONCTION DE CONNEXION APPLE
   Future<void> signInWithApple() async {
+    final loc = AppLocalizations.of(context);
     setState(() {
       _isLoading = true;
       _error = '';
@@ -223,7 +206,7 @@ class _LoginPageState extends State<LoginPage> {
         throw Exception("Utilisateur null après connexion Apple");
       }
     } on FirebaseAuthException catch (e) {
-      _handleAuthError(e);
+      _handleAuthError(e, loc);
       print('Erreur Firebase Auth (Apple): $e');
     } on apple.SignInWithAppleAuthorizationException catch (e) {
       // Gérer l'annulation par l'utilisateur
@@ -233,10 +216,10 @@ class _LoginPageState extends State<LoginPage> {
           _isLoading = false;
         });
       } else {
-        _handleGenericError(e, 'Échec de la connexion Apple.');
+        _handleGenericError(e, loc);
       }
     } catch (e) {
-      _handleGenericError(e, 'Échec de la connexion Apple. Veuillez réessayer.');
+      _handleGenericError(e, loc);
       print('Erreur de connexion Apple: $e');
     }
   }
@@ -272,6 +255,7 @@ class _LoginPageState extends State<LoginPage> {
   // 4. WIDGET BUILD
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -300,7 +284,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      'Bienvenue',
+                      loc.loginTitle,
                       style: GoogleFonts.actor(
                         fontSize: 32,
                         fontWeight: FontWeight.w700,
@@ -309,7 +293,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Connectez-vous pour continuer',
+                      loc.loginSubtitle,
                       style: GoogleFonts.abel(
                         fontSize: 18,
                         color: Colors.blue.shade700,
@@ -362,7 +346,7 @@ class _LoginPageState extends State<LoginPage> {
                           children: [
                             const SizedBox(height: 16),
                             Text(
-                              'Connexion en cours...',
+                              loc.loginProgress,
                               style: GoogleFonts.abel(
                                 fontSize: 16,
                                 color: Colors.blue.shade700,
@@ -401,7 +385,7 @@ class _LoginPageState extends State<LoginPage> {
                                   ),
                                 )
                               : Text(
-                                  'Se connecter avec Google',
+                                  loc.loginGoogle,
                                   style: GoogleFonts.aBeeZee(
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
@@ -411,7 +395,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
 
                       // Bouton de connexion Apple (Visible uniquement sur iOS/macOS)
-                      // if (Platform.isIOS || Platform.isMacOS)
+                      if (Platform.isIOS || Platform.isMacOS)
                         Column(
                           children: [
                             const SizedBox(height: 16),
@@ -425,7 +409,7 @@ class _LoginPageState extends State<LoginPage> {
                                 iconAlignment: _isLoading 
                                   ? apple.IconAlignment.center 
                                   : apple.IconAlignment.left,
-                                text: _isLoading ? 'Connexion…' : 'Se connecter avec Apple',
+                                text: _isLoading ? loc.loginAppleConnecting : loc.loginAppleButton,
                               ),
                             ),
                           ],
@@ -445,7 +429,7 @@ class _LoginPageState extends State<LoginPage> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Votre session sera sauvegardée pour une reconnexion automatique',
+                                loc.loginSessionInfo,
                                 style: GoogleFonts.abel(
                                   fontSize: 12,
                                   color: Colors.blue[700],

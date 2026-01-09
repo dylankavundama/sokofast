@@ -1,11 +1,14 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:soko/style.dart';
-import 'dart:convert';
-import 'category_item.dart';
-import 'products_by_category_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart'; // Importation nécessaire pour Shimmer
+import 'package:soko/l10n/app_localizations.dart';
+import 'package:soko/style.dart';
+
+import 'category_item.dart';
+import 'products_by_category_screen.dart';
 
 // Clé de cache pour les catégories
 const String _categoriesCacheKey = 'cachedCategoriesData';
@@ -31,6 +34,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   List<dynamic> _categories = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  bool _isOfflineMode = false;
 
   @override
   void initState() {
@@ -39,7 +43,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
   }
 
   // Fonction utilitaire pour mettre à jour l'état et traiter les données
-  void _updateCategoryState(List<dynamic> data) {
+  void _updateCategoryState(List<dynamic> data, {bool isOffline = false}) {
     // Filtrer les catégories qui n'ont pas de nom, ou celles qui sont des catégories "non catégorisées" (id 0 ou 1)
     final filteredCategories = data.where((cat) {
       final name = cat['name']?.toString().toLowerCase() ?? '';
@@ -49,6 +53,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
     setState(() {
       _categories = filteredCategories;
       _isLoading = false;
+      _isOfflineMode = isOffline;
+      _errorMessage = '';
     });
   }
 
@@ -56,6 +62,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
     setState(() {
       _isLoading = true;
       _errorMessage = '';
+      _isOfflineMode = false;
     });
     
     final prefs = await SharedPreferences.getInstance();
@@ -74,7 +81,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
         // Succès : Mettre à jour le cache et l'état
         await prefs.setString(_categoriesCacheKey, response.body);
         final data = json.decode(response.body) as List<dynamic>;
-        _updateCategoryState(data);
+        _updateCategoryState(data, isOffline: false);
         
       } else {
         throw Exception('Erreur serveur: ${response.statusCode}');
@@ -86,16 +93,13 @@ class _CategoryScreenState extends State<CategoryScreen> {
       if (cachedDataString != null && cachedDataString.isNotEmpty) {
         // Succès du cache : Utiliser les données locales et afficher un avertissement
         final data = json.decode(cachedDataString) as List<dynamic>;
-        _updateCategoryState(data);
-
-        setState(() {
-           _errorMessage = 'Mode hors ligne activé. Données potentiellement obsolètes.';
-        });
+        _updateCategoryState(data, isOffline: true);
         
       } else {
         // Échec total : Pas de connexion et pas de cache
         setState(() {
-          _errorMessage = 'Erreur de connexion et aucune donnée locale disponible.';
+          _errorMessage = 'CONNECTION_ERROR';
+          _isOfflineMode = false;
           _isLoading = false;
         });
       }
@@ -104,13 +108,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: backdColor,
-        title: const Text(
-          'Catégories',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          loc.categoriesTitle,
+          style: TextStyle(color: Theme.of(context).appBarTheme.foregroundColor ?? Colors.white),
         ),
       ),
       body: RefreshIndicator(
@@ -118,13 +123,15 @@ class _CategoryScreenState extends State<CategoryScreen> {
         child: Column(
           children: [
             // Affichage du message d'erreur ou d'avertissement hors ligne
-            if (_errorMessage.isNotEmpty)
+            if (_isOfflineMode || _errorMessage.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
                 child: Text(
-                  _errorMessage,
+                  _isOfflineMode
+                      ? loc.offlineMode
+                      : (_errorMessage == 'CONNECTION_ERROR' ? loc.offlineError : _errorMessage),
                   style: TextStyle(
-                    color: _errorMessage.contains('Mode hors ligne') ? Colors.orange : Colors.red,
+                    color: _isOfflineMode ? Colors.orange : Colors.red,
                     fontWeight: FontWeight.bold,
                   ),
                   textAlign: TextAlign.center,
@@ -135,8 +142,8 @@ class _CategoryScreenState extends State<CategoryScreen> {
             Expanded(
               child: _isLoading
                   ? const ShimmerCategoryGrid() // UTILISATION DU SHIMMER
-                  : _categories.isEmpty && _errorMessage.isEmpty
-                      ? const Center(child: Text('Aucune catégorie disponible.'))
+                  : _categories.isEmpty && !_isOfflineMode && _errorMessage.isEmpty
+                      ? Center(child: Text(loc.categoriesEmpty))
                       : GridView.builder(
                             padding: const EdgeInsets.all(10),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -202,7 +209,7 @@ class ShimmerCategoryGrid extends StatelessWidget {
         itemBuilder: (context, index) {
           return Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -213,7 +220,7 @@ class ShimmerCategoryGrid extends StatelessWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).cardColor,
                     borderRadius: BorderRadius.circular(40),
                   ),
                 ),
@@ -222,7 +229,7 @@ class ShimmerCategoryGrid extends StatelessWidget {
                 Container(
                   width: 100,
                   height: 15,
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                 ),
               ],
             ),

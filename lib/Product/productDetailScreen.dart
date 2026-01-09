@@ -1,17 +1,19 @@
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:soko/Auth/loginPage.dart';
 import 'package:soko/Screen/CartScreen.dart';
 import 'package:soko/Widget/fullImage.dart';
 import 'package:soko/comment.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/order.dart';
 import 'package:soko/style.dart';
-import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final dynamic product;
@@ -73,25 +75,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   }
 
   void _addToCart() async {
+    final loc = AppLocalizations.of(context);
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool isLoggedIn = prefs.getBool('isLoggedIn') ?? true;
+    bool isLoggedIn = prefs.getBool('is_logged_in') ?? false;
 
     if (!isLoggedIn) {
       // Rediriger vers l'écran de connexion/inscription
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => LoginPage()),
+        MaterialPageRoute(builder: (_) => const LoginPage()),
       );
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Veuillez vous connecter pour ajouter au panier.')),
+        SnackBar(content: Text(loc.productLoginRequired)),
       );
       return;
     }
 
     // Si connecté, ajouter au panier
-    // IMPORTANT : On ajoute l'objet produit original, mais l'écran CartScreen 
-    // devra lui aussi appliquer la majoration de 30% pour l'affichage des prix.
     setState(() {
       cartItems.add({
         'product': widget.product,
@@ -102,10 +102,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     await _saveCartLocally();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
+      SnackBar(
         content: Text(
-          'Ajouté au panier',
-          style: TextStyle(color: primaryYellow),
+          loc.productAddedToCart,
+          style: const TextStyle(color: primaryYellow),
         ),
       ),
     );
@@ -120,7 +120,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     required double totalPrice,
     required String paymentMethod,
   }) async {
-    const url = 'https://soko.com/json/commande.php';
+    const url = 'https://www.sokofast.com/backend/commande.php';
 
     try {
       final response = await http.post(
@@ -137,32 +137,35 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         }),
       );
 
+      final loc = AppLocalizations.of(context);
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         if (responseData['message'] == 'Commande enregistrée avec succès') {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text("Commande passée",
-                    style: TextStyle(color: Colors.white))),
+            SnackBar(
+                content: Text(loc.productOrderPlaced,
+                    style: const TextStyle(color: Colors.white))),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Failed to send order')),
+            SnackBar(content: Text(loc.productOrderFailed)),
           );
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Network error')),
+          SnackBar(content: Text(loc.productNetworkError)),
         );
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error: ${e.toString()}')),
+        SnackBar(content: Text('${loc.productNetworkError}: ${e.toString()}')),
       );
     }
   }
 
   void showOrderDialog(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final product = widget.product;
     // Utiliser le prix majoré pour le dialogue
     final price = _calculatePriceWithMarkup(product['price']); 
@@ -172,43 +175,42 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Commande complète'),
+          title: Text(loc.productOrderComplete),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Votre nom',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: loc.productYourName,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: addressController,
-                  decoration: const InputDecoration(
-                    labelText: 'Votre adresse',
-                    border: OutlineInputBorder(),
+                  decoration: InputDecoration(
+                    labelText: loc.productYourAddress,
+                    border: const OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  // Afficher le prix majoré
-                  'Produit: ${product['name']}\nQuantité: $_quantity\nTotal: ${total.toStringAsFixed(2)} \$',
+                  loc.productOrderSummary(product['name'], _quantity, total.toStringAsFixed(2)),
                   style: const TextStyle(fontSize: 16),
                 ),
                 const SizedBox(height: 16),
-                const Text(
-                  'Choisissez le mode de paiement :',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                Text(
+                  loc.productChoosePayment,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.call, color: Colors.white),
-                  label: const Text(
-                    'WhatsApp',
-                    style: TextStyle(color: Colors.white),
+                  label: Text(
+                    loc.cartWhatsapp,
+                    style: const TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
@@ -218,9 +220,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     if (nameController.text.isEmpty ||
                         addressController.text.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content:
-                                Text("Veuillez remplir le nom et l'adresse")),
+                        SnackBar(
+                            content: Text(loc.productFillNameAddress)),
                       );
                       return;
                     }
@@ -237,9 +238,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 const SizedBox(height: 12),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.phone_android, color: Colors.white),
-                  label: const Text(
-                    'Mobile Money',
-                    style: TextStyle(color: Colors.white),
+                  label: Text(
+                    loc.cartMobileMoney,
+                    style: const TextStyle(color: Colors.white),
                   ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.orange,
@@ -268,18 +269,15 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     // Utiliser le prix majoré pour le message WhatsApp
     final priceWithMarkup = _calculatePriceWithMarkup(product['price']);
     
-    final message = """
-Bonjour, je m'appelle $name.
-
-Je voudrais commander :
-${product['name']}
-Quantité: $quantity
-Prix unitaire majoré: ${priceWithMarkup.toStringAsFixed(2)} \$
-
-Total: ${total.toStringAsFixed(2)} \$
-
-Address: $address
-""";
+    final loc = AppLocalizations.of(context);
+    final message = loc.productWhatsappMessage(
+      name,
+      product['name'],
+      quantity,
+      priceWithMarkup.toStringAsFixed(2),
+      total.toStringAsFixed(2),
+      address,
+    );
 
     const phone = '243973989083';
     final url = Uri.parse(
@@ -306,13 +304,15 @@ Address: $address
 
         await launchUrl(url, mode: LaunchMode.externalApplication);
       } else {
+        final loc = AppLocalizations.of(context);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Could not open WhatsApp")),
+          SnackBar(content: Text(loc.productCouldNotOpenWhatsapp)),
         );
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
+        SnackBar(content: Text('${loc.productNetworkError}: ${e.toString()}')),
       );
     }
   }
@@ -334,7 +334,7 @@ Address: $address
       total: total,
       address: address,
       paymentMethod: paymentMethod,
-      status: 'En préparation', // Statut par défaut
+      status: 'Pending', // Statut par défaut
     );
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -348,13 +348,14 @@ Address: $address
   final commentController = TextEditingController();
 
   void _showMobileMoneyOptions(BuildContext context, double totalPrice) {
+    final loc = AppLocalizations.of(context);
     final name = nameController.text.trim();
     final address = addressController.text.trim();
 
     // Vérification: Si nom/adresse sont vides, on affiche le premier dialogue
     if (name.isEmpty || address.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Veuillez remplir le nom et l'adresse")),
+        SnackBar(content: Text(loc.cartNeedAddressOrGps)),
       );
       // On ne fait rien de plus, l'utilisateur devra ré-appeler la fonction depuis le dialogue
       return; 
@@ -383,8 +384,9 @@ Address: $address
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setState) {
+            final loc = AppLocalizations.of(context);
             return AlertDialog(
-              title: const Text('Mode de paiement'),
+              title: Text(loc.productPaymentMethod),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -402,7 +404,7 @@ Address: $address
                         subtitle: Row(
                           children: [
                             Expanded(
-                              child: Text('Numero: ${method.value['number']}'),
+                              child: Text(loc.productPaymentNumber(method.value['number']!)),
                             ),
                             IconButton(
                               icon: const Icon(Icons.copy, size: 16),
@@ -412,7 +414,7 @@ Address: $address
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                       content:
-                                          Text('${method.key} number copied')),
+                                          Text(loc.productNumberCopied(method.key))),
                                 );
                               },
                             ),
@@ -429,10 +431,10 @@ Address: $address
                     if (selectedMethod.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       TextField(
-                        decoration: const InputDecoration(
-                          labelText: 'Transaction ID',
-                          hintText: 'Entrez le code de transaction',
-                          border: OutlineInputBorder(),
+                        decoration: InputDecoration(
+                          labelText: loc.productTransactionId,
+                          hintText: loc.productTransactionIdHint,
+                          border: const OutlineInputBorder(),
                         ),
                         onChanged: (value) => transactionId = value,
                       ),
@@ -441,10 +443,9 @@ Address: $address
                         onPressed: () async {
                           if (transactionId.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content:
-                                    Text("Veuillez saisir l'ID de transaction"),
-                              ),
+                              SnackBar(
+                                content: Text(loc.productEnterTransactionId),
+                              ), 
                             );
                             return;
                           }
@@ -482,9 +483,9 @@ Address: $address
                           backgroundColor: Colors.green,
                           minimumSize: const Size(double.infinity, 50),
                         ),
-                        child: const Text(
-                          'Confirmer la commande',
-                          style: TextStyle(color: Colors.white),
+                        child: Text(
+                          loc.productConfirmOrder,
+                          style: const TextStyle(color: Colors.white),
                         ),
                       ),
                     ],
@@ -500,6 +501,7 @@ Address: $address
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     final product = widget.product;
     // Utiliser le prix majoré pour l'affichage
     final price = _calculatePriceWithMarkup(product['price']); 
@@ -609,10 +611,10 @@ Address: $address
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          product['name'] ?? 'No name',
+                          product['name'] ?? loc.myProductsNoName,
                           style: GoogleFonts.actor(
                             fontSize: 22,
-                            color: Colors.black,
+                            color: Theme.of(context).textTheme.bodyLarge?.color,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -627,7 +629,7 @@ Address: $address
                         const SizedBox(height: 4),
                         OutlinedButton.icon(
                             icon: const Icon(Icons.add_shopping_cart),
-                            label: const Text('Ajouter au panier'),
+                            label: Text(loc.productAddToCart),
                             style: OutlinedButton.styleFrom(
                               minimumSize: const Size(double.infinity, 50),
                             ),
@@ -637,10 +639,10 @@ Address: $address
                   ),
 
                   // TabBar
-                  const TabBar(
+                  TabBar(
                     tabs: [
-                      Tab(text: 'Description'),
-                      Tab(text: 'Commentaires'),
+                      Tab(text: loc.productDescriptionTab),
+                      Tab(text: loc.productCommentsTab),
                     ],
                     indicatorColor: backdColor,
                     labelColor: backdColor,
@@ -659,9 +661,9 @@ Address: $address
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Description',
-                                style: TextStyle(
+                              Text(
+                                loc.productDescription,
+                                style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -673,10 +675,10 @@ Address: $address
                                           .isNotEmpty
                                   ? Html(data: product['description'])
                                   : Text(
-                                      'No description available',
+                                      loc.productNoDescription,
                                       style: GoogleFonts.abel(
                                         fontSize: 16,
-                                        color: Colors.black54,
+                                        color: Theme.of(context).textTheme.bodyMedium?.color,
                                       ),
                                     ),
                               const SizedBox(height: 24),
@@ -684,8 +686,9 @@ Address: $address
                               // Sélecteur de quantité
                               Row(
                                 children: [
-                                  const Text('Quantité:',
-                                      style: TextStyle(fontSize: 16)),
+                                  Text(
+                                      loc.productQuantity,
+                                      style: const TextStyle(fontSize: 16)),
                                   const SizedBox(width: 16),
                                   IconButton(
                                     icon: const Icon(Icons.remove),
@@ -705,7 +708,7 @@ Address: $address
                                   const Spacer(),
                                   // Affichage du total basé sur le prix majoré
                                   Text(
-                                    'Total: ${total.toStringAsFixed(2)} \$',
+                                    '${loc.productTotal} ${total.toStringAsFixed(2)} \$',
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
@@ -722,9 +725,9 @@ Address: $address
                                     child: ElevatedButton.icon(
                                       icon: const Icon(Icons.add,
                                           color: Colors.white),
-                                      label: const Text(
-                                        'Panier',
-                                        style: TextStyle(color: Colors.white),
+                                      label: Text(
+                                        loc.productToCart,
+                                        style: const TextStyle(color: Colors.white),
                                       ),
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: backdColor,

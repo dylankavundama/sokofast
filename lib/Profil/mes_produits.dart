@@ -1,39 +1,32 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:soko/Product/add.dart';
 import 'package:soko/Profil/EditProductScreen.dart';
+import 'package:soko/l10n/app_localizations.dart';
 import 'package:soko/style.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-// 💡 Créez un nouveau fichier `image_viewer_screen.dart` ou ajoutez cette classe
-// DANS le fichier où vous en avez besoin (par exemple, mes_produits.dart).
-import 'package:flutter/material.dart';
 
-// 💡 Correction: La classe est immutable, donc le constructeur doit être const.
-// 💡 Correction: initialIndex doit être initialisé car il est final.
-// 💡 Correction: key est converti en super-paramètre.
 class ImageViewerScreen extends StatelessWidget {
   final List<dynamic> images;
   final int initialIndex;
 
   const ImageViewerScreen({
-    // ⬅️ Ajout de 'const' ici
-    super.key, // ⬅️ Utilisation du super-paramètre
+    super.key,
     required this.images,
-    this.initialIndex = 0, // ⬅️ initialisation du paramètre final ici
+    this.initialIndex = 0,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Utiliser un PageView pour permettre de glisser entre les images
+    final loc = AppLocalizations.of(context);
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Colors.black, // Garde noir pour la visualisation d'images
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: Colors.black, // Garde noir pour la visualisation d'images
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: PageView.builder(
-        // L'initialIndex doit être vérifié pour ne pas dépasser la taille de la liste
         controller: PageController(
             initialPage: images.isNotEmpty && initialIndex < images.length
                 ? initialIndex
@@ -91,62 +84,57 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       _currentUserEmail = prefs.getString('user_email');
       _currentUserName = prefs.getString('user_name');
 
-      print("👤 Utilisateur chargé: $_currentUserEmail");
-
       if (_currentUserEmail != null) {
         _loadMyProducts();
       } else {
+        final loc = AppLocalizations.of(context);
         setState(() {
           _hasError = true;
-          _errorMessage = "Aucun utilisateur connecté";
+          _errorMessage = loc.myProductsNoUser;
           _isLoading = false;
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       setState(() {
         _hasError = true;
-        _errorMessage = "Erreur de chargement des données utilisateur";
+        _errorMessage = loc.myProductsUserError;
         _isLoading = false;
       });
     }
   }
 
-  // ✅ SAUVEGARDER L'UTILISATEUR CONNECTÉ
   static Future<void> saveUserData(String email, String name) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('user_email', email);
       await prefs.setString('user_name', name);
-      print("✅ Données utilisateur sauvegardées: $email");
     } catch (e) {
-      print("❌ Erreur sauvegarde utilisateur: $e");
+      print("Erreur sauvegarde utilisateur: $e");
     }
   }
 
-  // ✅ DÉCONNEXER L'UTILISATEUR
   static Future<void> logoutUser() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('user_email');
       await prefs.remove('user_name');
-      print("✅ Utilisateur déconnecté");
     } catch (e) {
-      print("❌ Erreur déconnexion: $e");
+      print("Erreur déconnexion: $e");
     }
   }
 
-  // ✅ OBTENIR L'EMAIL UTILISATEUR ACTUEL
   static Future<String?> getCurrentUserEmail() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('user_email');
   }
 
-  // ✅ CHARGER LES PRODUITS DE L'UTILISATEUR
   Future<void> _loadMyProducts() async {
+    final loc = AppLocalizations.of(context);
     if (_currentUserEmail == null) {
       setState(() {
         _hasError = true;
-        _errorMessage = "Veuillez vous connecter";
+        _errorMessage = loc.myProductsPleaseLogin;
         _isLoading = false;
       });
       return;
@@ -178,48 +166,46 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       if (response.statusCode == 200) {
         final List<dynamic> allProducts = jsonDecode(response.body);
 
-        // Filtrer les produits par utilisateur connecté
         final userProducts = allProducts.where((product) {
           return _isProductOwnedByUser(product);
         }).toList();
 
-        // Trier par date de création
         userProducts
             .sort((a, b) => b['date_created'].compareTo(a['date_created']));
 
-        // Sauvegarder dans le cache
         await _saveProductsToCache(userProducts);
 
         setState(() {
           _products = userProducts;
           _isLoading = false;
         });
-
-        print("✅ ${_products.length} produits trouvés pour $_currentUserEmail");
       } else {
         final error = jsonDecode(response.body);
+        final loc = AppLocalizations.of(context);
         setState(() {
           _hasError = true;
-          _errorMessage = error['message'] ?? 'Erreur inconnue';
+          _errorMessage = error['message'] ?? loc.errorUnknown;
           _isLoading = false;
         });
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       // En cas d'erreur réseau, utiliser le cache
       if (_products.isEmpty) {
         setState(() {
           _hasError = true;
-          _errorMessage = "Erreur de connexion: $e";
+          _errorMessage = loc.errorConnectionGeneric(e.toString());
           _isLoading = false;
         });
       } else {
         setState(() {
           _isLoading = false;
         });
+        final loc = AppLocalizations.of(context);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("⚠️ Mode hors ligne - données en cache"),
+            SnackBar(
+              content: Text(loc.myProductsOfflineCache),
               backgroundColor: Colors.orange,
             ),
           );
@@ -235,7 +221,6 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
 
     final metaData = product['meta_data'] ?? [];
 
-    // Vérifier dans les meta données
     for (var meta in metaData) {
       if (meta['key'] == 'vendor_user_id' ||
           meta['key'] == 'user_email' ||
@@ -247,7 +232,6 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       }
     }
 
-    // Vérifier dans le nom ou description (fallback)
     final productName = product['name']?.toString().toLowerCase() ?? '';
     final productDesc = product['description']?.toString().toLowerCase() ?? '';
     final userEmailPrefix = _currentUserEmail!.split('@')[0].toLowerCase();
@@ -256,19 +240,16 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         productDesc.contains(userEmailPrefix);
   }
 
-  // ✅ SAUVEGARDER LES PRODUITS DANS LE CACHE
   Future<void> _saveProductsToCache(List<dynamic> products) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final productsJson = jsonEncode(products);
       await prefs.setString('cached_products_$_currentUserEmail', productsJson);
-      print("💾 ${products.length} produits sauvegardés en cache");
     } catch (e) {
-      print("❌ Erreur sauvegarde cache: $e");
+      print("Erreur sauvegarde cache: $e");
     }
   }
 
-  // ✅ CHARGER LES PRODUITS DEPUIS LE CACHE
   Future<void> _loadCachedProducts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -280,26 +261,24 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         setState(() {
           _products = cachedProducts;
         });
-        print("📂 ${_products.length} produits chargés depuis le cache");
       }
     } catch (e) {
-      print("❌ Erreur chargement cache: $e");
+      print("Erreur chargement cache: $e");
     }
   }
 
-  // ✅ SUPPRIMER UN PRODUIT
   Future<void> _deleteProduct(int productId, String productName) async {
-    // Vérifier d'abord si l'utilisateur peut supprimer ce produit
     final product = _products.firstWhere(
       (p) => p['id'] == productId,
       orElse: () => null,
     );
 
+    final loc = AppLocalizations.of(context);
     if (product == null || !_isProductOwnedByUser(product)) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("❌ Vous ne pouvez pas supprimer ce produit"),
+          SnackBar(
+            content: Text(loc.myProductsCannotDeleteProduct),
             backgroundColor: Colors.red,
           ),
         );
@@ -311,18 +290,16 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Confirmer la suppression"),
-          content:
-              Text("Êtes-vous sûr de vouloir supprimer \"$productName\" ?"),
+          title: Text(loc.myProductsConfirmDeleteTitle),
+          content: Text(loc.myProductsConfirmDeleteQuestion(productName)),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Annuler"),
+              child: Text(loc.myProductsCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child:
-                  const Text("Supprimer", style: TextStyle(color: Colors.red)),
+              child: Text(loc.myProductsDelete, style: const TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -343,10 +320,11 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
       );
 
       if (response.statusCode == 200) {
+        final loc = AppLocalizations.of(context);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("✅ \"$productName\" supprimé avec succès"),
+              content: Text(loc.myProductsDeletedSuccess(productName)),
               backgroundColor: Colors.green,
             ),
           );
@@ -354,21 +332,23 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
         // Recharger la liste et mettre à jour le cache
         await _loadMyProducts();
       } else {
+        final loc = AppLocalizations.of(context);
         final error = jsonDecode(response.body);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text("❌ Erreur: ${error['message']}"),
+              content: Text("${loc.myProductsErrorPrefix} ${error['message']}"),
               backgroundColor: Colors.red,
             ),
           );
         }
       }
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("❌ Erreur: $e"),
+            content: Text(loc.genericErrorPrefix(e.toString())),
             backgroundColor: Colors.red,
           ),
         );
@@ -376,23 +356,23 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     }
   }
 
-  // ✅ DÉCONNEXION
   Future<void> _logout() async {
+    final loc = AppLocalizations.of(context);
     final bool? confirm = await showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Déconnexion"),
-          content: const Text("Êtes-vous sûr de vouloir vous déconnecter ?"),
+          title: Text(loc.myProductsLogoutText),
+          content: Text(loc.myProductsLogoutQuestion),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text("Annuler"),
+              child: Text(loc.myProductsCancel),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text("Déconnexion",
-                  style: TextStyle(color: Colors.red)),
+              child: Text(loc.myProductsLogoutText,
+                  style: const TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -408,7 +388,6 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     }
   }
 
-  // ✅ FORMATTER LE PRIX
   String _formatPrice(String price) {
     try {
       final double amount = double.parse(price);
@@ -418,7 +397,6 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
     }
   }
 
-  // ✅ FORMATTER LA DATE
   String _formatDate(String dateString) {
     try {
       final DateTime date = DateTime.parse(dateString);
@@ -430,9 +408,10 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final loc = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Mes Produits"),
+        title: Text(loc.myProductsTitle),
         centerTitle: true,
         backgroundColor: backdColor,
         foregroundColor: Colors.white,
@@ -440,7 +419,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadMyProducts,
-            tooltip: "Actualiser",
+            tooltip: loc.myProductsRefresh,
           ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -451,7 +430,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                     builder: (context) => const AddProductScreen()),
               ).then((_) => _loadMyProducts());
             },
-            tooltip: "Ajouter un produit",
+            tooltip: loc.myProductsAdd,
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
@@ -463,23 +442,23 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
               }
             },
             itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'clear_cache',
                 child: Row(
                   children: [
-                    Icon(Icons.clear_all, size: 20),
-                    SizedBox(width: 8),
-                    Text('Vider le cache'),
+                    const Icon(Icons.clear_all, size: 20),
+                    const SizedBox(width: 8),
+                    Text(loc.myProductsClearCacheText),
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, size: 20, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Déconnexion', style: TextStyle(color: Colors.red)),
+                    const Icon(Icons.logout, size: 20, color: Colors.red),
+                    const SizedBox(width: 8),
+                    Text(loc.myProductsLogoutText, style: const TextStyle(color: Colors.red)),
                   ],
                 ),
               ),
@@ -505,21 +484,23 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   Future<void> _clearCache() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      final loc = AppLocalizations.of(context);
       await prefs.remove('cached_products_$_currentUserEmail');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Cache vidé"),
+          SnackBar(
+            content: Text(loc.myProductsCacheCleared),
             backgroundColor: Colors.green,
           ),
         );
       }
       _loadMyProducts();
     } catch (e) {
+      final loc = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("❌ Erreur: $e"),
+            content: Text("${loc.myProductsErrorPrefix} $e"),
             backgroundColor: Colors.red,
           ),
         );
@@ -528,14 +509,15 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
   }
 
   Widget _buildBody() {
+    final loc = AppLocalizations.of(context);
     if (_isLoading) {
-      return const Center(
+      return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text("Chargement de vos produits..."),
+            const CircularProgressIndicator(),
+            const SizedBox(height: 16),
+            Text(loc.myProductsLoading),
           ],
         ),
       );
@@ -548,9 +530,9 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            const Text(
-              "Erreur de chargement",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              loc.myProductsErrorLoading,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -565,7 +547,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             ElevatedButton.icon(
               onPressed: _loadMyProducts,
               icon: const Icon(Icons.refresh),
-              label: const Text("Réessayer"),
+              label: Text(loc.myProductsRetry),
             ),
           ],
         ),
@@ -580,18 +562,18 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
             const Icon(Icons.inventory_2_outlined,
                 size: 80, color: Colors.grey),
             const SizedBox(height: 16),
-            const Text(
-              "Aucun produit",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            Text(
+              loc.myProductsNone,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              "Vous n'avez pas encore créé de produits",
-              style: TextStyle(color: Colors.grey),
+            Text(
+              loc.myProductsNoneDesc,
+              style: const TextStyle(color: Colors.grey),
             ),
             if (_currentUserEmail != null)
               Text(
-                "Connecté en tant que: $_currentUserEmail",
+                "${loc.myProductsConnectedAs} $_currentUserEmail",
                 style: const TextStyle(color: Colors.grey, fontSize: 12),
               ),
             const SizedBox(height: 20),
@@ -604,7 +586,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                 );
               },
               icon: const Icon(Icons.add),
-              label: const Text("Créer mon premier produit"),
+              label: Text(loc.myProductsCreateFirst),
             ),
           ],
         ),
@@ -633,7 +615,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _currentUserName ?? 'Utilisateur',
+                          _currentUserName ?? loc.myProductsDefaultUser,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -647,24 +629,23 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                     ),
                   ),
                   Text(
-                    "${_products.length} produit(s)",
+                    loc.myProductsCount(_products.length),
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       color: Colors.blue,
                     ),
                   ),
                 ],
-              ),
             ),
-
-          // Liste des produits
+          ),
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _products.length,
               itemBuilder: (context, index) {
+                final loc = AppLocalizations.of(context);
                 final product = _products[index];
-                final String name = product['name'] ?? 'Sans nom';
+                final String name = product['name'] ?? loc.myProductsNoName;
                 final String price = product['regular_price'] ?? '0';
                 final String description = product['description'] ?? '';
                 final String date = product['date_created'] ?? '';
@@ -715,14 +696,14 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                             height: 150,
                             width: double.infinity,
                             color: Colors.grey[200],
-                            child: const Column(
+                            child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.image_not_supported,
+                                const Icon(Icons.image_not_supported,
                                     size: 50, color: Colors.grey),
-                                SizedBox(height: 8),
-                                Text("Aucune image",
-                                    style: TextStyle(color: Colors.grey)),
+                                const SizedBox(height: 8),
+                                Text(loc.myProductsNoImage,
+                                    style: const TextStyle(color: Colors.grey)),
                               ],
                             ),
                           ),
@@ -770,7 +751,7 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                                       size: 14, color: Colors.grey),
                                   const SizedBox(width: 4),
                                   Text(
-                                    "Créé le ${_formatDate(date)}",
+                                    loc.myProductsCreatedOn(_formatDate(date)),
                                     style: const TextStyle(
                                         fontSize: 12, color: Colors.grey),
                                   ),
@@ -800,14 +781,14 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                                           // Exemple : _fetchProducts();
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
-                                            const SnackBar(
+                                            SnackBar(
                                                 content:
-                                                    Text("Liste rafraîchie.")),
+                                                    Text(loc.myProductsListRefreshed)),
                                           );
                                         }
                                       },
                                       icon: const Icon(Icons.edit, size: 18),
-                                      label: const Text("Modifier"),
+                                      label: Text(loc.myProductsEdit),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
@@ -817,8 +798,8 @@ class _MyProductsScreenState extends State<MyProductsScreen> {
                                           _deleteProduct(productId, name),
                                       icon: const Icon(Icons.delete,
                                           size: 18, color: Colors.red),
-                                      label: const Text("Supprimer",
-                                          style: TextStyle(color: Colors.red)),
+                                      label: Text(loc.myProductsDeleteText,
+                                          style: const TextStyle(color: Colors.red)),
                                     ),
                                   ),
                                 ],

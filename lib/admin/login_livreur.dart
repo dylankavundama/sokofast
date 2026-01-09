@@ -4,6 +4,7 @@ import 'package:soko/admin/order.dart';
 
 // ⚠️ Assurez-vous que le chemin vers votre fichier de style est correct
 import 'package:soko/style.dart';
+import 'package:soko/l10n/app_localizations.dart';
 
 class LoginLivre extends StatefulWidget {
   const LoginLivre({super.key});
@@ -24,6 +25,7 @@ class _LoginLivreState extends State<LoginLivre> {
 
   // 2. Logique de vérification
   void _attemptLogin() {
+    final loc = AppLocalizations.of(context);
     final enteredName = _nameController.text.trim();
 
     // Convertir le Identifiant saisi et les Identifiants autorisés en minuscule pour une vérification insensible à la casse
@@ -42,7 +44,7 @@ class _LoginLivreState extends State<LoginLivre> {
     } else {
       // Échec : Afficher le message d'erreur
       setState(() {
-        _errorMessage = 'Erreur : Identifiant d\'utilisateur non autorisé.';
+        _errorMessage = loc.adminLoginError;
       });
     }
   }
@@ -67,51 +69,60 @@ class _LoginLivreState extends State<LoginLivre> {
                   'assets/liv.png'),
               const SizedBox(height: 30),
 
-              Text(
-                'Veuillez entrer votre Identifiant pour accéder aux commandes.',
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-              ),
-              const SizedBox(height: 30),
+              Builder(
+                builder: (context) {
+                  final loc = AppLocalizations.of(context);
+                  return Column(
+                    children: [
+                      Text(
+                        loc.adminLoginInstruction,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 30),
 
-              // Champ de saisie du Identifiant
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Votre Identifiant',
-                  hintText: 'Ex: Liv_Billy',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.person),
-                  errorText:
-                      _errorMessage, // Affichage dynamique du message d'erreur
-                ),
-                onSubmitted: (_) =>
-                    _attemptLogin(), // Permet de se connecter en appuyant sur Entrée
-              ),
-              const SizedBox(height: 20),
+                      // Champ de saisie du Identifiant
+                      TextField(
+                        controller: _nameController,
+                        decoration: InputDecoration(
+                          labelText: loc.adminLoginIdLabel,
+                          hintText: loc.adminLoginIdHint,
+                          border: const OutlineInputBorder(),
+                          prefixIcon: const Icon(Icons.person),
+                          errorText:
+                              _errorMessage, // Affichage dynamique du message d'erreur
+                        ),
+                        onSubmitted: (_) =>
+                            _attemptLogin(), // Permet de se connecter en appuyant sur Entrée
+                      ),
+                      const SizedBox(height: 20),
 
-              // Bouton de connexion
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _attemptLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryYellow,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 5,
-                  ),
-                  child: const Text(
-                    'Accéder',
-                    style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF2C3E50)),
-                  ),
-                ),
+                      // Bouton de connexion
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _attemptLogin,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryYellow,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 5,
+                          ),
+                          child: Text(
+                            loc.adminLoginAccess,
+                            style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF2C3E50)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
